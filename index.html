@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="HAKAI MPC">
     <link rel="apple-touch-icon" href="icon-180.png">
     <link rel="icon" type="image/png" href="favicon.png">
@@ -16,12 +16,11 @@
 </head>
 <body>
 
-    <!-- ========== SCREEN 1: LOADING CENTER ========== -->
     <div id="screen1" class="screen active">
         <div class="screen1-container">
             <img src="HAKAIMPC-logo.png" alt="HAKAI MPC 2000 Crate Digging Center" class="hakai-logo">
 
-            <div class="auth-bar">
+            <div class="auth-bar" id="authBar">
                 <button class="auth-btn" id="authBtn">
                     <span class="auth-dot" id="authDot">&#9679;</span>
                     <span id="authLabel">CONNECT YOUTUBE</span>
@@ -30,7 +29,7 @@
 
             <div class="bezel">
                 <div class="lcd-screen">
-                    <div class="lcd-inner">
+                    <div class="lcd-inner" id="formArea">
                         <div class="form-group">
                             <label for="keywords">KEYWORDS</label>
                             <input type="text" id="keywords" placeholder="70s soul sample, obscure jazz..." value="70s soul sample">
@@ -94,7 +93,9 @@
                 </div>
             </div>
 
-            <button class="create-btn" id="createPlaylistBtn"><span>CREATE PLAYLIST</span></button>
+            <button class="create-btn" id="createPlaylistBtn">
+                <span>CREATE PLAYLIST</span>
+            </button>
 
             <div class="loading-indicator" id="loadingIndicator">
                 <div class="loading-dots">
@@ -105,23 +106,21 @@
         </div>
     </div>
 
-    <!-- ========== SCREEN 2: INTERFACE ========== -->
     <div id="screen2" class="screen">
-        <div class="s2">
-            <!-- Header: no HAKAI, just subtitle -->
+        <div class="screen2-container">
             <div class="header-bar">
+                <span class="header-hakai">HAKAI</span>
                 <span class="header-text">MPC 2000 CRATE DIGGING CENTER</span>
                 <img class="header-avatar" id="headerAvatar" src="" alt="" style="display:none;">
             </div>
 
-            <!-- Display -->
             <div class="bezel bezel-sm">
                 <div class="display-unit">
                     <div class="display-top-label">MUSIC PRODUCTION CENTER</div>
                     <div class="player-area">
                         <div id="ytPlayer"></div>
                         <div class="green-overlay"></div>
-                        <div class="video-info">
+                        <div class="video-info" id="videoInfo">
                             <span id="videoTitle">NO VIDEO LOADED</span>
                             <span id="videoIndex">0 / 0</span>
                         </div>
@@ -135,7 +134,6 @@
                 </div>
             </div>
 
-            <!-- F-key buttons -->
             <div class="fkey-row">
                 <div class="hw-btn-small"><div class="hw-btn-cap"></div></div>
                 <div class="hw-btn-small"><div class="hw-btn-cap"></div></div>
@@ -143,7 +141,6 @@
                 <div class="hw-btn-small"><div class="hw-btn-cap"></div></div>
             </div>
 
-            <!-- Pad Grid -->
             <div class="pad-grid">
                 <div class="pad-cell"><span class="pad-label">PAD 10</span><button class="pad" data-pad="9"><span class="pad-time"></span></button></div>
                 <div class="pad-cell"><span class="pad-label">PAD 11</span><button class="pad" data-pad="10"><span class="pad-time"></span></button></div>
@@ -159,7 +156,6 @@
                 <div class="pad-cell"><span class="pad-label">PAD 3</span><button class="pad" data-pad="2"><span class="pad-time"></span></button></div>
             </div>
 
-            <!-- Speed row -->
             <div class="speed-row">
                 <div class="speed-cell"><span class="speed-label">-.5</span><button class="hw-btn-small speed-btn" data-speed="0.5"><div class="hw-btn-cap"></div></button></div>
                 <div class="speed-cell"><span class="speed-label">-.75</span><button class="hw-btn-small speed-btn" data-speed="0.75"><div class="hw-btn-cap"></div></button></div>
@@ -167,26 +163,36 @@
                 <div class="speed-cell"><span class="speed-label">1.5</span><button class="hw-btn-small speed-btn" data-speed="1.5"><div class="hw-btn-cap"></div></button></div>
             </div>
 
-            <!-- Transport: 4-column, 2-row grid -->
-            <!-- Row 1: LAST  NEXT  STOP  PLAY (white/silver) -->
-            <!-- Row 2: REC   STOPREC  <3SEC  3SEC> -->
-            <div class="transport-grid">
-                <div class="t-cell"><span class="t-label">LAST</span><button class="t-btn white" id="btnLast"></button></div>
-                <div class="t-cell"><span class="t-label">NEXT</span><button class="t-btn white" id="btnNext"></button></div>
-                <div class="t-cell"><span class="t-label">STOP</span><button class="t-btn silver" id="btnStop"></button></div>
-                <div class="t-cell"><span class="t-label">PLAY</span><button class="t-btn silver" id="btnPlay"></button></div>
-
-                <div class="t-cell"><span class="t-label">REC</span><button class="t-btn red" id="btnRec"><div class="rec-dot"></div></button></div>
-                <div class="t-cell"><span class="t-label">STOP REC</span><button class="t-btn red" id="btnStopRec"><div class="rec-square"></div></button></div>
-                <div class="t-cell"><span class="t-label">&lt; 3 SEC</span><button class="t-btn white" id="btnBack3"></button></div>
-                <div class="t-cell"><span class="t-label">3 SEC &gt;</span><button class="t-btn white" id="btnFwd3"></button></div>
+            <div class="transport-row">
+                <div class="transport-cell"><span class="transport-label">-3 SEC</span><button class="transport-btn silver" id="btnSkipBack"></button></div>
+                <div class="transport-cell"><span class="transport-label">+3 SEC</span><button class="transport-btn silver" id="btnSkipFwd"></button></div>
             </div>
 
-            <div class="rec-status-bar"><span class="rec-status" id="recStatus"></span></div>
+            <div class="transport-row">
+                <div class="transport-cell"><span class="transport-label">LAST</span><button class="transport-btn red" id="btnLast"></button></div>
+                <div class="transport-cell"><span class="transport-label">NEXT</span><button class="transport-btn red" id="btnNext"></button></div>
+                <div class="transport-cell"><span class="transport-label">STOP</span><button class="transport-btn silver" id="btnStop"></button></div>
+                <div class="transport-cell"><span class="transport-label">PLAY</span><button class="transport-btn silver" id="btnPlay"></button></div>
+            </div>
+
+            <div class="record-row">
+                <div class="transport-cell">
+                    <span class="transport-label">REC</span>
+                    <button class="transport-btn rec" id="btnRec">
+                        <div class="rec-dot"></div>
+                    </button>
+                </div>
+                <div class="transport-cell">
+                    <span class="transport-label">STOP REC</span>
+                    <button class="transport-btn rec-stop" id="btnStopRec">
+                        <div class="rec-square"></div>
+                    </button>
+                </div>
+                <div class="rec-status" id="recStatus"></div>
+            </div>
         </div>
     </div>
 
-    <!-- Save dialog -->
     <div class="modal-overlay" id="saveModal">
         <div class="modal-box">
             <div class="modal-title">SAVE SAMPLE</div>
