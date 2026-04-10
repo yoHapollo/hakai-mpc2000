@@ -89,11 +89,35 @@ function initGoogleAuth() {
 function handleTokenResponse(resp) {
     if (resp.error) { showToast('SIGN IN FAILED'); return; }
     accessToken = resp.access_token;
+    
+    // SAVE TO LOCAL STORAGE (Token lasts 1 hour)
+    const expiresAt = Date.now() + (resp.expires_in * 1000); 
+    localStorage.setItem('hakai_yt_token', accessToken);
+    localStorage.setItem('hakai_yt_expires', expiresAt.toString());
+
     fetchUserProfile();
     authDot.classList.add('connected');
     authLabel.textContent = 'CONNECTED';
     authBtn.classList.add('signed-in');
     showToast('YOUTUBE CONNECTED');
+}
+function checkExistingLogin() {
+    const savedToken = localStorage.getItem('hakai_yt_token');
+    const expiresAt = localStorage.getItem('hakai_yt_expires');
+
+    // If a token exists and the current time is less than the expiration time...
+    if (savedToken && expiresAt && Date.now() < parseInt(expiresAt)) {
+        accessToken = savedToken;
+        fetchUserProfile();
+        authDot.classList.add('connected');
+        authLabel.textContent = 'CONNECTED';
+        authBtn.classList.add('signed-in');
+        console.log('[HAKAI] Restored YouTube session from LocalStorage');
+    } else {
+        // If it's expired or missing, wipe the slate clean
+        localStorage.removeItem('hakai_yt_token');
+        localStorage.removeItem('hakai_yt_expires');
+    }
 }
 
 async function fetchUserProfile() {
@@ -111,6 +135,11 @@ authBtn.addEventListener('click', () => {
     if (CONFIG.CLIENT_ID === 'YOUR_CLIENT_ID_HERE') { showToast('SET YOUR CLIENT_ID IN APP.JS'); return; }
     if (accessToken) {
         accessToken = null; userInfo = null; hakaiPlaylistId = null;
+        
+        // WIPE MEMORY ON MANUAL LOGOUT
+        localStorage.removeItem('hakai_yt_token');
+        localStorage.removeItem('hakai_yt_expires');
+        
         authDot.classList.remove('connected');
         authLabel.textContent = 'CONNECT YOUTUBE';
         authBtn.classList.remove('signed-in');
@@ -126,6 +155,7 @@ authBtn.addEventListener('click', () => {
 function onYouTubeIframeAPIReady() {
     console.log('[HAKAI] YouTube IFrame API ready');
     initGoogleAuth();
+    checkExistingLogin(); // <-- Triggers the silent login check
 }
 
 function initPlayer(videoId) {
