@@ -1,8 +1,8 @@
 /* ============================================
-   HAKAI MPC 2000 — APP.JS (V3.3 - Retry Loop Fix)
+   HAKAI MPC 2000 — APP.JS (V3.4 - API Restored)
    YouTube OAuth + Randomized Crate Digging
    + Pad Chopping + Keyboard MPC + WAV Export
-   + 3-Second Skip Grid + Auto-Retry Engine
+   + 3-Second Skip Grid + Target Playlist
    ============================================ */
 
 // ==========================================
@@ -28,8 +28,6 @@ let currentSpeed = 1.0;
 let accessToken = null;
 let tokenClient = null;
 let userInfo = null;
-let hakaiPlaylistId = null;
-let watchLaterPlaylistId = null;
 
 // Recording
 let mediaRecorder = null;
@@ -101,6 +99,7 @@ function handleTokenResponse(resp) {
     authBtn.classList.add('signed-in');
     showToast('YOUTUBE CONNECTED');
 }
+
 function checkExistingLogin() {
     const savedToken = localStorage.getItem('hakai_yt_token');
     const expiresAt = localStorage.getItem('hakai_yt_expires');
@@ -132,7 +131,7 @@ async function fetchUserProfile() {
 authBtn.addEventListener('click', () => {
     if (CONFIG.CLIENT_ID === 'YOUR_CLIENT_ID_HERE') { showToast('SET YOUR CLIENT_ID IN APP.JS'); return; }
     if (accessToken) {
-        accessToken = null; userInfo = null; hakaiPlaylistId = null;
+        accessToken = null; userInfo = null;
         localStorage.removeItem('hakai_yt_token');
         localStorage.removeItem('hakai_yt_expires');
         authDot.classList.remove('connected');
@@ -179,9 +178,8 @@ function parseISO8601Duration(duration) {
 }
 
 // ==========================================
-// ★★★ RANDOMIZED SEARCH SYSTEM (WITH RETRY) ★★★
+// ★★★ RANDOMIZED SEARCH SYSTEM ★★★
 // ==========================================
-
 const QUERY_SUFFIXES = [
     'vinyl', 'original', 'rare', 'album track',
     'audio', 'HQ', 'remastered', 'single', 'official audio',
@@ -212,7 +210,7 @@ createBtn.addEventListener('click', async () => {
     
     let results = [];
     let attempts = 0;
-    const maxAttempts = 4; // Auto-retry up to 4 times if the filter gets 0 results
+    const maxAttempts = 4;
 
     while (attempts < maxAttempts && results.length === 0) {
         try {
@@ -239,7 +237,6 @@ createBtn.addEventListener('click', async () => {
 
     currentPlaylist = results;
     currentVideoIndex = 0;
-    hakaiPlaylistId = null;
     switchToScreen2();
 });
 
@@ -323,7 +320,7 @@ function formatViewCount(n) {
 }
 
 // ==========================================
-// YOUTUBE AUTHENTICATED ACTIONS
+// ★★★ YOUTUBE AUTHENTICATED ACTIONS ★★★
 // ==========================================
 async function ytApi(endpoint, method = 'GET', body = null) {
     if (!accessToken) return null;
@@ -335,9 +332,44 @@ async function ytApi(endpoint, method = 'GET', body = null) {
     return resp.json();
 }
 
-async function addToPlaylist() { /* same as before */ }
-async function addToWatchLater() { /* same as before */ }
-async function likeVideo() { /* same as before */ }
+// TARGET PLAYLIST ADDER
+async function addToPlaylist() {
+    const video = currentPlaylist[currentVideoIndex];
+    if (!video) return;
+    if (!accessToken) { showToast('SIGN IN TO ADD TO YT PLAYLIST'); return; }
+
+    const TARGET_PLAYLIST_ID = 'PLLVBqHeyUt0DYFxk20wKv495txAKAg9eu';
+
+    try {
+        await ytApi('playlistItems?part=snippet', 'POST', {
+            snippet: {
+                playlistId: TARGET_PLAYLIST_ID,
+                resourceId: { kind: 'youtube#video', videoId: video.videoId }
+            }
+        });
+        flashKey('#btnF2');
+        showToast('ADDED TO TARGET PLAYLIST');
+    } catch (e) {
+        console.error('[HAKAI] Playlist Add Error:', e);
+        showToast('PLAYLIST ERROR — CHECK PERMISSIONS');
+    }
+}
+
+// LIKE VIDEO RESTORED
+async function likeVideo() {
+    const video = currentPlaylist[currentVideoIndex];
+    if (!video) return;
+    if (!accessToken) { showToast('SIGN IN TO LIKE YT VIDEO'); return; }
+
+    try {
+        await ytApi(`videos/rate?id=${video.videoId}&rating=like`, 'POST');
+        flashKey('#btnF4');
+        showToast('♥ LIKED ON YOUTUBE');
+    } catch (e) {
+        console.error('[HAKAI] Like Error:', e);
+        showToast('LIKE ERROR');
+    }
+}
 
 // ==========================================
 // SCREEN TRANSITIONS
@@ -510,6 +542,7 @@ $$('.pad').forEach(padEl => {
 // SOFT KEYS
 // ==========================================
 function doGenNewPlaylist() { switchToScreen1(); showToast('BACK TO CRATE DIGGING'); }
+
 $('#btnF1').addEventListener('click', doGenNewPlaylist);
 $('#btnF2').addEventListener('click', addToPlaylist);
 $('#btnF3').addEventListener('click', doNormalSpeed);
@@ -682,4 +715,4 @@ function showToast(msg) {
     clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800);
 }
 document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v3.3');
+console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v3.4');
