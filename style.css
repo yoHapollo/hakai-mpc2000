@@ -1,5 +1,5 @@
 /* ============================================
-   HAKAI MPC 2000 — STYLE.CSS (V3.3 - PWA Keyboard Fix)
+   HAKAI MPC 2000 — STYLE.CSS (V3.5)
    Condensed iPhone-fit layout (no scroll)
    ============================================ */
 
@@ -16,12 +16,14 @@
     --font-display: 'Bebas Neue', Impact, sans-serif;
 }
 
-/* Base resets WITHOUT the global user-select lock */
 * { margin: 0; padding: 0; box-sizing: border-box;
     -webkit-tap-highlight-color: transparent; }
 
-/* --- SURGICAL SELECTION LOCK FOR HARDWARE UI ONLY --- */
-/* This prevents blue highlighting on pads but allows the iPhone keyboard to work */
+input, select, textarea {
+    -webkit-user-select: auto !important;
+    user-select: auto !important;
+}
+
 button, .pad, .t-btn, .soft-key, .hw-btn-small, .header-bar, label, .pad-label, .t-label, .speed-label {
     -webkit-user-select: none;
     user-select: none;
@@ -33,13 +35,11 @@ html, body {
     background: var(--bg); font-family: var(--font-mono); color: var(--text-white);
 }
 
-/* ========== SCREENS ========== */
 .screen { display: none; width: 100%; height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
 .screen.active { display: flex; }
 .screen::-webkit-scrollbar { display: none; }
 .screen { scrollbar-width: none; }
 
-/* ========== SCREEN 1 ========== */
 .screen1-container {
     width: 100%; max-width: 420px; margin: 0 auto;
     padding: 50px 20px 40px;
@@ -47,7 +47,6 @@ html, body {
 }
 .hakai-logo { width: 85%; max-width: 380px; height: auto; }
 
-/* Auth */
 .auth-bar { margin-top: 14px; width: 100%; display: flex; justify-content: center; }
 .auth-btn {
     background: transparent; border: 1px solid #333; border-radius: 4px;
@@ -59,7 +58,6 @@ html, body {
 .auth-dot.connected { color: var(--pad-active); }
 .auth-btn.signed-in { border-color: rgba(68,204,68,0.3); }
 
-/* Bezel */
 .bezel {
     width: 100%; margin-top: 14px;
     background: linear-gradient(180deg, #333 0%, #1a1a1a 6%, #111 94%, #333 100%);
@@ -68,7 +66,6 @@ html, body {
 }
 .bezel-sm { margin-top: 4px; padding: 8px; }
 
-/* LCD */
 .lcd-screen {
     width: 100%; background: linear-gradient(145deg, #3d6b2e, #5a8a4a, #4a7a3a);
     border-radius: 4px; padding: 3px;
@@ -76,7 +73,6 @@ html, body {
 }
 .lcd-inner { padding: 14px 12px; }
 
-/* Form */
 .form-group { margin-bottom: 10px; }
 .form-group label { display: block; font-size: 8px; letter-spacing: 2px; color: var(--lcd-text); margin-bottom: 3px; font-weight: 700; }
 .form-group input, .form-group select {
@@ -89,7 +85,6 @@ html, body {
 .form-row { display: flex; gap: 8px; }
 .form-group.half { flex: 1; }
 
-/* Create button */
 .create-btn {
     margin-top: 20px; padding: 11px 36px;
     background: linear-gradient(180deg, #e03030 0%, #c62828 40%, #a51c1c 100%);
@@ -99,7 +94,6 @@ html, body {
 .create-btn span { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 2px; }
 .create-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #6d1111, 0 2px 4px rgba(0,0,0,0.5); }
 
-/* Loading */
 .loading-indicator { display: none; margin-top: 16px; font-size: 12px; color: var(--red); letter-spacing: 2px; }
 .loading-indicator.show { display: block; }
 .loading-dots .dot { animation: blink 1.2s infinite; }
@@ -108,16 +102,12 @@ html, body {
 .loading-dots .dot:nth-child(4) { animation-delay: 0.6s; }
 @keyframes blink { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 
-/* ========================================
-   SCREEN 2 — Condensed for iPhone no-scroll
-   ======================================== */
 .screen2-container {
     width: 100%; max-width: 420px; margin: 0 auto;
     padding: env(safe-area-inset-top, 4px) 10px env(safe-area-inset-bottom, 4px);
     height: 100%; display: flex; flex-direction: column;
 }
 
-/* Header */
 .header-bar { text-align: center; padding: 3px 0; position: relative; flex-shrink: 0; }
 .header-text { font-family: var(--font-mono); font-size: 10px; color: var(--text-white); letter-spacing: 1.5px; font-weight: 700; }
 .header-avatar {
@@ -125,11 +115,9 @@ html, body {
     width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--pad-active);
 }
 
-/* Display unit */
 .display-unit { background: var(--bezel-inner); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
 .display-top-label { text-align: center; font-size: 8px; letter-spacing: 2px; color: var(--text-dim); padding: 4px 0 2px; }
 
-/* The player area and strict iframe boundary fix */
 .player-area {
     position: relative; width: calc(100% - 12px); margin: 0 auto;
     aspect-ratio: 16/9;
@@ -151,7 +139,7 @@ html, body {
 }
 #videoTitle { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 6px; }
 
-/* Soft keys */
+/* F-KEYS GRID (ALIGNED) */
 .soft-keys { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid #333; }
 .soft-key {
     background: transparent; border: none; border-right: 1px solid #333;
@@ -163,8 +151,8 @@ html, body {
 .soft-key:active { background: rgba(255,255,255,0.05); color: #fff; }
 .soft-key.flash { color: var(--pad-active); }
 
-/* F-key row */
-.fkey-row { display: flex; justify-content: space-around; padding: 5px 24px; flex-shrink: 0; }
+/* Changed to Grid to perfectly center under LCD text */
+.fkey-row { display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; padding: 6px 0; flex-shrink: 0; }
 .hw-btn-small {
     width: 50px; height: 14px;
     background: linear-gradient(180deg, #d4d0c8 0%, #b8b4ac 40%, #a8a49c 100%);
@@ -175,7 +163,6 @@ html, body {
 .hw-btn-cap { width: 75%; height: 4px; background: linear-gradient(180deg, #3a3832, #1a1a18); border-radius: 1px; }
 .hw-btn-small:active { transform: translateY(1px); box-shadow: 0 1px 0 #706c64; }
 
-/* ========== PAD GRID — Strict min-height fix ========== */
 .pad-grid {
     display: grid; grid-template-columns: repeat(3, 1fr);
     gap: 5px; padding: 3px 6px; flex: 1; min-height: 0;
@@ -201,7 +188,6 @@ html, body {
 }
 .pad.active .pad-time { color: rgba(0,0,0,0.7); }
 
-/* ========== SPEED ROW ========== */
 .speed-row { display: flex; justify-content: space-around; padding: 5px 16px 2px; flex-shrink: 0; }
 .speed-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .speed-label { font-size: 10px; font-weight: 700; color: var(--text-white); letter-spacing: 0.5px; }
@@ -209,7 +195,6 @@ html, body {
 .speed-btn.active-speed { background: linear-gradient(180deg, #e8c8a8 0%, #d4a878 40%, #c09060 100%); }
 .speed-btn.active-speed .hw-btn-cap { background: linear-gradient(180deg, #5a3020, #3a1a10); }
 
-/* ========== TRANSPORT GRID — 4 col × 2 row ========== */
 .transport-grid {
     display: grid; grid-template-columns: repeat(4, 1fr);
     gap: 6px 8px; padding: 4px 12px 2px; flex-shrink: 0;
@@ -223,28 +208,24 @@ html, body {
 }
 .t-btn:active { transform: translateY(2px); }
 
-/* White buttons */
 .t-btn.white {
     background: linear-gradient(145deg, #e8e4de 0%, #d0ccc6 30%, #c0bcb6 70%, #b0aca6 100%);
     box-shadow: 0 2px 0 #8a8680, 0 3px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5);
 }
 .t-btn.white:active { box-shadow: 0 1px 0 #8a8680; }
 
-/* Silver buttons */
 .t-btn.silver {
     background: linear-gradient(145deg, #d0ccc6 0%, #b8b4ae 30%, #a8a49e 70%, #989490 100%);
     box-shadow: 0 2px 0 #6a6864, 0 3px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4);
 }
 .t-btn.silver:active { box-shadow: 0 1px 0 #6a6864; }
 
-/* Red buttons */
 .t-btn.red {
     background: linear-gradient(145deg, #e03838 0%, #cc2828 30%, #aa1c1c 70%, #881414 100%);
     box-shadow: 0 2px 0 #5a0e0e, 0 3px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 .t-btn.red:active { box-shadow: 0 1px 0 #5a0e0e; }
 
-/* Rec dot/square inside buttons */
 .rec-dot {
     width: 10px; height: 10px; border-radius: 50%; background: #fff;
     box-shadow: 0 0 4px rgba(255,255,255,0.4);
@@ -257,13 +238,11 @@ html, body {
 
 .rec-square { width: 9px; height: 9px; border-radius: 1px; background: #fff; }
 
-/* Rec status bar */
 .rec-status-bar { text-align: center; padding: 2px 0; flex-shrink: 0; min-height: 14px; }
 .rec-status { font-size: 9px; letter-spacing: 1.5px; color: var(--red); }
 .rec-status.active { animation: rec-text-blink 0.8s infinite; }
 @keyframes rec-text-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-/* ========== TOAST ========== */
 .toast {
     position: fixed; bottom: 20px; left: 50%;
     transform: translateX(-50%) translateY(80px);
@@ -274,7 +253,6 @@ html, body {
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
-/* ========== SAVE MODAL ========== */
 .modal-overlay {
     display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
@@ -310,6 +288,5 @@ html, body {
 }
 .modal-save:active { transform: translateY(1px); }
 
-/* ========== RESPONSIVE ========== */
 @media (min-width: 500px) { .screen1-container { padding-top: 80px; } }
 @media (max-height: 700px) { .screen1-container { padding-top: 30px; } }

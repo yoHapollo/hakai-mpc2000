@@ -1,8 +1,8 @@
 /* ============================================
-   HAKAI MPC 2000 — APP.JS (V3.4 - API Restored)
+   HAKAI MPC 2000 — APP.JS (V3.5 - Visual Update)
    YouTube OAuth + Randomized Crate Digging
    + Pad Chopping + Keyboard MPC + WAV Export
-   + 3-Second Skip Grid + Target Playlist
+   + Canvas Screenshot Engine + F-Key Sync
    ============================================ */
 
 // ==========================================
@@ -24,12 +24,10 @@ let player = null;
 let playerReady = false;
 let currentSpeed = 1.0;
 
-// OAuth
 let accessToken = null;
 let tokenClient = null;
 let userInfo = null;
 
-// Recording
 let mediaRecorder = null;
 let recordedChunks = [];
 let isRecording = false;
@@ -88,7 +86,6 @@ function handleTokenResponse(resp) {
     if (resp.error) { showToast('SIGN IN FAILED'); return; }
     accessToken = resp.access_token;
     
-    // SAVE TO LOCAL STORAGE (Token lasts 1 hour)
     const expiresAt = Date.now() + (resp.expires_in * 1000); 
     localStorage.setItem('hakai_yt_token', accessToken);
     localStorage.setItem('hakai_yt_expires', expiresAt.toString());
@@ -332,7 +329,6 @@ async function ytApi(endpoint, method = 'GET', body = null) {
     return resp.json();
 }
 
-// TARGET PLAYLIST ADDER
 async function addToPlaylist() {
     const video = currentPlaylist[currentVideoIndex];
     if (!video) return;
@@ -355,7 +351,6 @@ async function addToPlaylist() {
     }
 }
 
-// LIKE VIDEO RESTORED
 async function likeVideo() {
     const video = currentPlaylist[currentVideoIndex];
     if (!video) return;
@@ -474,11 +469,6 @@ function updateSpeedUI() {
         btn.classList.toggle('active-speed', parseFloat(btn.dataset.speed) === currentSpeed && currentSpeed !== 1.0);
     });
 }
-function doNormalSpeed() {
-    currentSpeed = 1.0;
-    if (player && playerReady) player.setPlaybackRate(1.0);
-    updateSpeedUI(); showToast('SPEED: 1.0x');
-}
 
 // ==========================================
 // PAD SYSTEM
@@ -534,19 +524,120 @@ $$('.pad').forEach(padEl => {
     padEl.addEventListener('touchstart', () => {
         pressTimer = setTimeout(() => clearPad(idx), 600);
     }, { passive: true });
-    padEl.addEventListener('touchend', () => clearTimeout(pressTimer));
     padEl.addEventListener('touchmove', () => clearTimeout(pressTimer));
 });
 
 // ==========================================
-// SOFT KEYS
+// ★★★ SCREENSHOT ENGINE ★★★
+// ==========================================
+async function doScreenshot() {
+    const video = currentPlaylist[currentVideoIndex];
+    if (!video) return;
+    showToast('GENERATING SCREENSHOT...');
+
+    try {
+        let channelName = "Unknown Channel";
+        let publishedAt = "Unknown Date";
+        let viewCount = "0";
+
+        // Fetch deep stats from YouTube
+        const statsResp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${video.videoId}&key=${CONFIG.API_KEY}`);
+        if (statsResp.ok) {
+            const statsData = await statsResp.json();
+            if (statsData.items && statsData.items.length > 0) {
+                const item = statsData.items[0];
+                channelName = item.snippet.channelTitle;
+                publishedAt = new Date(item.snippet.publishedAt).toLocaleDateString();
+                viewCount = formatViewCount(item.statistics.viewCount);
+            }
+        }
+
+        // Setup HTML5 Canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = 1280;
+        canvas.height = 720;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Fetch YouTube Thumbnail securely
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = `https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`;
+        
+        img.onload = () => drawAndSave(img);
+        img.onerror = () => {
+            const fallbackImg = new Image();
+            fallbackImg.crossOrigin = "anonymous";
+            fallbackImg.src = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
+            fallbackImg.onload = () => drawAndSave(fallbackImg);
+            fallbackImg.onerror = () => drawAndSave(null); // Failsafe: Text on Black Background
+        };
+
+        function drawAndSave(loadedImg) {
+            if (loadedImg) ctx.drawImage(loadedImg, 0, 0, 1280, 720);
+
+            // Dark gradient overlay to make text pop
+            const grad = ctx.createLinearGradient(0, 0, 0, 720);
+            grad.addColorStop(0, 'rgba(0,0,0,0.1)');
+            grad.addColorStop(0.5, 'rgba(0,0,0,0.6)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.95)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 1280, 720);
+
+            // Inject Metadata Text
+            ctx.fillStyle = '#44cc44';
+            ctx.font = 'bold 30px "Courier New", monospace';
+            ctx.fillText('MPC 2000 CRATE DIGGING CENTER', 50, 60);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 60px "Courier New", monospace';
+            let title = video.title.replace(/\[.*?views\]/g, '').trim();
+            if(title.length > 38) title = title.substring(0, 38) + '...';
+            ctx.fillText(title, 50, 580);
+            
+            ctx.font = '35px "Courier New", monospace';
+            ctx.fillStyle = '#cccccc';
+            ctx.fillText(`CHANNEL: ${channelName.toUpperCase()}`, 50, 640);
+            ctx.fillText(`RELEASED: ${publishedAt}  |  VIEWS: ${viewCount}`, 50, 690);
+
+            // Export to Camera Roll / Downloads
+            try {
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = `Crate-Dig-${video.videoId}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                flashKey('#btnF3');
+                showToast('SCREENSHOT SAVED');
+            } catch (err) {
+                console.error("Canvas error:", err);
+                showToast('CORS ERROR - CAPTURE FAILED');
+            }
+        }
+    } catch(e) {
+        showToast('ERROR CAPTURING IMAGE');
+    }
+}
+
+// ==========================================
+// SOFT KEYS & HARDWARE BUTTON WIRING
 // ==========================================
 function doGenNewPlaylist() { switchToScreen1(); showToast('BACK TO CRATE DIGGING'); }
 
 $('#btnF1').addEventListener('click', doGenNewPlaylist);
 $('#btnF2').addEventListener('click', addToPlaylist);
-$('#btnF3').addEventListener('click', doNormalSpeed);
+$('#btnF3').addEventListener('click', doScreenshot);
 $('#btnF4').addEventListener('click', likeVideo);
+
+// Wire physical buttons underneath screen to trigger the F-keys
+const fkeyBtns = $$('.fkey-row .hw-btn-small');
+if(fkeyBtns[0]) fkeyBtns[0].addEventListener('click', () => $('#btnF1').click());
+if(fkeyBtns[1]) fkeyBtns[1].addEventListener('click', () => $('#btnF2').click());
+if(fkeyBtns[2]) fkeyBtns[2].addEventListener('click', () => $('#btnF3').click());
+if(fkeyBtns[3]) fkeyBtns[3].addEventListener('click', () => $('#btnF4').click());
 
 // ==========================================
 // ★★★ KEYBOARD MAPPING ★★★
@@ -591,7 +682,7 @@ document.addEventListener('keydown', (e) => {
 
     if (key === 'k') { e.preventDefault(); doGenNewPlaylist(); return; }
     if (key === 'l') { e.preventDefault(); addToPlaylist(); return; }
-    if (key === ';') { e.preventDefault(); doNormalSpeed(); return; }
+    if (key === ';') { e.preventDefault(); doScreenshot(); return; }
     if (key === "'") { e.preventDefault(); likeVideo(); return; }
 
     if (key === 'r') { e.preventDefault(); startRecording(); return; }
@@ -715,4 +806,4 @@ function showToast(msg) {
     clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800);
 }
 document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v3.4');
+console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v3.5');
