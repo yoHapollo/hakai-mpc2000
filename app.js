@@ -8,8 +8,8 @@
 // ▶▶▶  YOUR CREDENTIALS — EDIT THESE  ◀◀◀
 // ==========================================
 const CONFIG = {
-    API_KEY: 'AIzaSyDaHVAAXKFjOiXc7pw9exh92MJYXIQ4Kvg',
-    CLIENT_ID: '564150027983-aero1s5g4ctnm5iihv3c1un23rc2mnk5.apps.googleusercontent.com',
+    API_KEY: 'YOUR_API_KEY_HERE',
+    CLIENT_ID: 'YOUR_CLIENT_ID_HERE',
     SCOPES: 'https://www.googleapis.com/auth/youtube',
 };
 
@@ -183,6 +183,16 @@ function randomPick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// Parses YouTube's ISO 8601 duration (e.g., "PT3M45S") into total seconds
+function parseISO8601Duration(duration) {
+    if (!duration) return 0;
+    const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    const hours = parseInt(match[1]) || 0;
+    const minutes = parseInt(match[2]) || 0;
+    const seconds = parseInt(match[3]) || 0;
+    return (hours * 3600) + (minutes * 60) + seconds;
+}
+
 createBtn.addEventListener('click', async () => {
     const keywords = $('#keywords').value.trim();
     if (!keywords) { showToast('ENTER KEYWORDS'); return; }
@@ -220,21 +230,22 @@ async function searchYouTubeRandomized(keywords, yearStart, yearEnd, maxViews, l
 
     // ---- RANDOMIZATION LAYER 1: Vary the query text ----
     const suffix = randomPick(QUERY_SUFFIXES);
-    const query = `${keywords} ${suffix}`;
+    
+    // NEW: The Negative Keyword Hammer
+    // This forces YouTube to exclude the most common non-song junk found in the Music category
+    const negativeKeywords = '-"type beat" -"sample pack" -tutorial -how -remake -lesson -review -documentary -reaction -vlog -podcast';
+    const query = `${keywords} ${suffix} ${negativeKeywords}`;
 
     // ---- RANDOMIZATION LAYER 2: Random sort order ----
     const order = randomPick(SORT_ORDERS);
 
     // ---- RANDOMIZATION LAYER 3: Random time sub-window ----
-    // Pick a random sub-range within the user's year range
-    // to surface different eras each time
     const startY = parseInt(yearStart);
     const endY = parseInt(yearEnd);
     const span = endY - startY;
     let searchStart, searchEnd;
 
     if (span > 5) {
-        // Pick a random window of 3-10 years within the range
         const windowSize = Math.min(span, Math.floor(Math.random() * 8) + 3);
         const offset = Math.floor(Math.random() * (span - windowSize + 1));
         searchStart = startY + offset;
@@ -251,7 +262,6 @@ async function searchYouTubeRandomized(keywords, yearStart, yearEnd, maxViews, l
     const publishedAfter = `${searchStart}-${String(startMonth).padStart(2, '0')}-01T00:00:00Z`;
     const publishedBefore = `${searchEnd}-${String(endMonth).padStart(2, '0')}-28T23:59:59Z`;
 
-    // Always fetch max 50 to have a big pool to randomize from
     const fetchCount = 50;
 
     const params = new URLSearchParams({
@@ -262,7 +272,7 @@ async function searchYouTubeRandomized(keywords, yearStart, yearEnd, maxViews, l
         publishedBefore: publishedBefore,
         maxResults: fetchCount,
         order: order,
-        videoCategoryId: '10',
+        videoCategoryId: '10', // Strictly the Music category
         key: CONFIG.API_KEY,
     });
     if (language) params.set('relevanceLanguage', language);
@@ -274,7 +284,7 @@ async function searchYouTubeRandomized(keywords, yearStart, yearEnd, maxViews, l
     const data = await resp.json();
 
     let videos = (data.items || [])
-        .filter(item => item.id && item.id.videoId) // safety
+        .filter(item => item.id && item.id.videoId)
         .map(item => ({
             videoId: item.id.videoId,
             title: item.snippet.title
@@ -288,27 +298,42 @@ async function searchYouTubeRandomized(keywords, yearStart, yearEnd, maxViews, l
         return true;
     });
 
-    // ---- RANDOMIZATION LAYER 5: Shuffle the entire pool ----
     videos = shuffleArray(videos);
 
-    // ---- VIEW COUNT FILTER ----
-    if (maxViews !== 'any' && videos.length > 0) {
-        const maxViewCount = parseInt(maxViews);
+    // ---- NEW: DUAL FILTER (VIEW COUNT + DURATION SIEVE) ----
+    if (videos.length > 0) {
         const ids = videos.map(v => v.videoId).join(',');
 
+        // We added 'contentDetails' to the part list to grab the video duration
         const statsResp = await fetch(
-            `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${ids}&key=${CONFIG.API_KEY}`
+            `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id=${ids}&key=${CONFIG.API_KEY}`
         );
+        
         if (statsResp.ok) {
             const statsData = await statsResp.json();
             const viewMap = {};
+            const durationMap = {};
+            
             (statsData.items || []).forEach(item => {
                 viewMap[item.id] = parseInt(item.statistics.viewCount) || 0;
+                durationMap[item.id] = parseISO8601Duration(item.contentDetails.duration);
             });
+
+            const maxViewCount = maxViews !== 'any' ? parseInt(maxViews) : Infinity;
 
             videos = videos.filter(v => {
                 const views = viewMap[v.videoId];
-                return views !== undefined && views <= maxViewCount;
+                const durationSecs = durationMap[v.videoId];
+                
+                // Filter 1: Must be under the max view count limit
+                const passesViews = views !== undefined && views <= maxViewCount;
+                
+                // Filter 2: The Duration Sieve. 
+                // A typical song is between 1m 15s (75 secs) and 15m (900 secs). 
+                // This permanently eliminates 1-hour docs and 30-second TikTok loops.
+                const passesDuration = durationSecs !== undefined && durationSecs >= 75 && durationSecs <= 900;
+
+                return passesViews && passesDuration;
             });
 
             videos = videos.map(v => ({
@@ -467,6 +492,23 @@ $('#btnStop').addEventListener('click', doStop);
 $('#btnNext').addEventListener('click', doNext);
 $('#btnLast').addEventListener('click', doLast);
 
+// 3-second skip
+function doBack3() {
+    if (!player || !playerReady) return;
+    const t = player.getCurrentTime();
+    player.seekTo(Math.max(0, t - 3), true);
+    showToast('◀ -3 SEC');
+}
+function doFwd3() {
+    if (!player || !playerReady) return;
+    const t = player.getCurrentTime();
+    player.seekTo(t + 3, true);
+    showToast('+3 SEC ▶');
+}
+
+$('#btnBack3').addEventListener('click', doBack3);
+$('#btnFwd3').addEventListener('click', doFwd3);
+
 // ==========================================
 // SPEED CONTROLS
 // ==========================================
@@ -602,6 +644,8 @@ fkeyBtns[3]?.addEventListener('click', () => $('#btnF4').click());
 //   Left Arrow = Last
 //   Right Arrow = Next
 //   Space = Play/Pause toggle
+//   [ = Back 3 seconds
+//   ] = Forward 3 seconds
 //
 // SPEED:
 //   M = 0.5x   , = 0.75x
@@ -670,6 +714,8 @@ document.addEventListener('keydown', (e) => {
     if (key === 'arrowleft') { e.preventDefault(); doLast(); return; }
     if (key === 'arrowright') { e.preventDefault(); doNext(); return; }
     if (key === ' ') { e.preventDefault(); doTogglePlayPause(); return; }
+    if (key === '[') { e.preventDefault(); doBack3(); return; }
+    if (key === ']') { e.preventDefault(); doFwd3(); return; }
 
     // --- SOFT KEYS ---
     if (key === 'k') { e.preventDefault(); doGenNewPlaylist(); return; }
@@ -939,4 +985,4 @@ document.addEventListener('touchstart', (e) => {
 
 console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded');
 console.log('[HAKAI] Keyboard: Z-X-C / A-S-D / Q-W-E / 1-2-3 = Pads');
-console.log('[HAKAI] Space=Play/Pause | ←→=Last/Next | R=Rec T=StopRec');
+console.log('[HAKAI] Space=Play/Pause | ←→=Last/Next | []=±3sec | R=Rec T=StopRec');
