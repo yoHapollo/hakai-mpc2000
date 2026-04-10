@@ -104,7 +104,7 @@ html, body {
    SCREEN 2 — Condensed for iPhone no-scroll
    Uses vh units and tight spacing
    ======================================== */
-.s2 {
+.screen2-container {
     width: 100%; max-width: 420px; margin: 0 auto;
     padding: env(safe-area-inset-top, 4px) 10px env(safe-area-inset-bottom, 4px);
     height: 100%; display: flex; flex-direction: column;
@@ -176,7 +176,7 @@ html, body {
     cursor: pointer; position: relative;
     background: linear-gradient(145deg, #dedad4 0%, #c8c4bc 30%, #b8b4ac 70%, #a8a49c 100%);
     box-shadow: 0 3px 0 #8a8680, 0 4px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.5);
-    transition: all 0.08s; min-height: 0;
+    transition: all 0.08s; min-height: 50px;
 }
 .pad:active { transform: translateY(2px); box-shadow: 0 1px 0 #8a8680, 0 2px 3px rgba(0,0,0,0.2); }
 .pad.active {
