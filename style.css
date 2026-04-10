@@ -1,0 +1,639 @@
+/* ============================================
+   HAKAI MPC 2000 — STYLE.CSS
+   Hardware-accurate sampler aesthetic
+   ============================================ */
+
+:root {
+    --bg: #000000;
+    --bezel-outer: #2a2a2a;
+    --bezel-inner: #1a1a1a;
+    --lcd-green: #4a7a3a;
+    --lcd-green-bright: #5a9a4a;
+    --lcd-text: #1a3a12;
+    --red: #D32F2F;
+    --red-dark: #8b1a1a;
+    --red-glow: #ff4444;
+    --pad-face: #c8c4bc;
+    --pad-shadow: #8a8680;
+    --pad-highlight: #dedad4;
+    --pad-active: #44cc44;
+    --silver: #b0b0b0;
+    --silver-dark: #707070;
+    --text-white: #e0e0e0;
+    --text-dim: #888888;
+    --font-mono: 'Share Tech Mono', 'Courier New', monospace;
+    --font-display: 'Bebas Neue', Impact, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: var(--font-mono);
+    color: var(--text-white);
+}
+
+/* ============================================
+   SCREEN MANAGEMENT
+   ============================================ */
+.screen {
+    display: none;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+.screen.active {
+    display: flex;
+}
+
+/* ============================================
+   SCREEN 1 — LOADING CENTER
+   ============================================ */
+.screen1-container {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 60px 20px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100%;
+}
+
+.hakai-title {
+    font-family: var(--font-display);
+    font-size: clamp(72px, 18vw, 120px);
+    color: var(--red);
+    letter-spacing: 8px;
+    line-height: 1;
+    text-shadow:
+        0 0 20px rgba(211, 47, 47, 0.3),
+        0 2px 0 var(--red-dark);
+}
+
+.hakai-subtitle {
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 3vw, 14px);
+    color: var(--text-white);
+    letter-spacing: 3px;
+    margin-top: 4px;
+    font-weight: 700;
+}
+
+/* ============================================
+   AUTH BAR
+   ============================================ */
+.auth-bar {
+    margin-top: 16px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+.auth-btn {
+    background: transparent;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--text-dim);
+    transition: border-color 0.2s, color 0.2s;
+}
+.auth-btn:active {
+    border-color: #555;
+    color: #ccc;
+}
+.auth-dot {
+    font-size: 10px;
+    color: var(--red);
+    transition: color 0.3s;
+}
+.auth-dot.connected {
+    color: var(--pad-active);
+}
+.auth-btn.signed-in {
+    border-color: rgba(68,204,68,0.3);
+}
+
+/* ============================================
+   BEZEL — The hardware screen housing
+   ============================================ */
+.bezel {
+    width: 100%;
+    margin-top: 16px;
+    background: linear-gradient(180deg, #333 0%, #1a1a1a 6%, #111 94%, #333 100%);
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid #444;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        0 4px 20px rgba(0,0,0,0.8);
+}
+.bezel-sm {
+    margin-top: 8px;
+}
+
+/* ============================================
+   LCD SCREEN
+   ============================================ */
+.lcd-screen {
+    width: 100%;
+    background: linear-gradient(145deg, #3d6b2e, #5a8a4a, #4a7a3a);
+    border-radius: 4px;
+    padding: 3px;
+    box-shadow:
+        inset 0 2px 8px rgba(0,0,0,0.5),
+        inset 0 0 20px rgba(0,0,0,0.2),
+        0 1px 0 rgba(255,255,255,0.05);
+}
+
+.lcd-inner {
+    padding: 16px 14px;
+}
+
+/* Form Styling on LCD */
+.form-group {
+    margin-bottom: 12px;
+}
+.form-group label {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--lcd-text);
+    margin-bottom: 4px;
+    font-weight: 700;
+}
+.form-group input,
+.form-group select {
+    width: 100%;
+    background: rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 2px;
+    padding: 6px 8px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #1a3a12;
+    outline: none;
+}
+.form-group input::placeholder {
+    color: rgba(26, 58, 18, 0.5);
+}
+.form-group input:focus,
+.form-group select:focus {
+    border-color: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.2);
+}
+.form-group select option {
+    background: #4a7a3a;
+    color: #1a3a12;
+}
+
+.form-row {
+    display: flex;
+    gap: 10px;
+}
+.form-group.half {
+    flex: 1;
+}
+
+/* ============================================
+   CREATE PLAYLIST BUTTON
+   ============================================ */
+.create-btn {
+    margin-top: 24px;
+    padding: 12px 40px;
+    background: linear-gradient(180deg, #e03030 0%, #c62828 40%, #a51c1c 100%);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow:
+        0 3px 0 #6d1111,
+        0 4px 8px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+    transition: all 0.1s;
+}
+.create-btn span {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 2px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+.create-btn:active {
+    transform: translateY(2px);
+    box-shadow:
+        0 1px 0 #6d1111,
+        0 2px 4px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+/* Loading */
+.loading-indicator {
+    display: none;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--red);
+    letter-spacing: 2px;
+}
+.loading-indicator.show {
+    display: block;
+}
+.loading-dots .dot {
+    animation: blink 1.2s infinite;
+}
+.loading-dots .dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots .dot:nth-child(3) { animation-delay: 0.4s; }
+.loading-dots .dot:nth-child(4) { animation-delay: 0.6s; }
+@keyframes blink {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+/* ============================================
+   SCREEN 2 — INTERFACE
+   ============================================ */
+.screen2-container {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 10px 14px 20px;
+}
+
+.header-bar {
+    text-align: center;
+    padding: 6px 0 4px;
+    position: relative;
+}
+.header-hakai {
+    font-family: var(--font-display);
+    font-size: 18px;
+    color: var(--red);
+    letter-spacing: 3px;
+    margin-right: 6px;
+}
+.header-text {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-white);
+    letter-spacing: 1.5px;
+    font-weight: 700;
+}
+.header-avatar {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--pad-active);
+}
+
+/* Display Unit */
+.display-unit {
+    background: var(--bezel-inner);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.display-top-label {
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    padding: 8px 0 4px;
+}
+
+/* Player area */
+.player-area {
+    position: relative;
+    width: calc(100% - 20px);
+    margin: 0 auto;
+    aspect-ratio: 16/9;
+    background: linear-gradient(145deg, #3d6b2e, #5a8a4a, #4a7a3a);
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+}
+.player-area iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+.green-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(74, 122, 58, 0.15);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    z-index: 2;
+}
+.video-info {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.7);
+    padding: 4px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: #aaa;
+    z-index: 3;
+}
+#videoTitle {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 8px;
+}
+
+/* Soft Keys */
+.soft-keys {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border-top: 1px solid #333;
+}
+.soft-key {
+    background: transparent;
+    border: none;
+    border-right: 1px solid #333;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 1px;
+    padding: 8px 4px;
+    cursor: pointer;
+    line-height: 1.3;
+    transition: color 0.15s, background 0.15s;
+}
+.soft-key:last-child {
+    border-right: none;
+}
+.soft-key:active {
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+}
+.soft-key.flash {
+    color: var(--pad-active);
+}
+
+/* ============================================
+   F-KEY HARDWARE BUTTONS
+   ============================================ */
+.fkey-row {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 30px;
+}
+
+.hw-btn-small {
+    width: 60px;
+    height: 20px;
+    background: linear-gradient(180deg, #d4d0c8 0%, #b8b4ac 40%, #a8a49c 100%);
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+    box-shadow:
+        0 2px 0 #706c64,
+        0 3px 4px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.hw-btn-cap {
+    width: 80%;
+    height: 5px;
+    background: linear-gradient(180deg, #3a3832, #1a1a18);
+    border-radius: 1px;
+}
+.hw-btn-small:active {
+    transform: translateY(1px);
+    box-shadow:
+        0 1px 0 #706c64,
+        0 1px 2px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.4);
+}
+
+/* ============================================
+   PAD GRID
+   ============================================ */
+.pad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 6px 8px;
+}
+
+.pad-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.pad-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text-white);
+    margin-bottom: 3px;
+}
+
+.pad {
+    aspect-ratio: 1.15;
+    width: 100%;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    position: relative;
+    background: linear-gradient(145deg, #dedad4 0%, #c8c4bc 30%, #b8b4ac 70%, #a8a49c 100%);
+    box-shadow:
+        0 4px 0 #8a8680,
+        0 5px 8px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.5),
+        inset 0 -1px 0 rgba(0,0,0,0.1);
+    transition: all 0.08s;
+}
+.pad:active {
+    transform: translateY(3px);
+    box-shadow:
+        0 1px 0 #8a8680,
+        0 2px 4px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.5);
+}
+.pad.active {
+    background: linear-gradient(145deg, #66dd66 0%, #44cc44 30%, #33aa33 70%, #228822 100%);
+    box-shadow:
+        0 4px 0 #1a6618,
+        0 5px 8px rgba(0,0,0,0.4),
+        0 0 12px rgba(68, 204, 68, 0.3),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.pad.active:active {
+    transform: translateY(3px);
+    box-shadow:
+        0 1px 0 #1a6618,
+        0 2px 4px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.pad .pad-time {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: rgba(0,0,0,0.5);
+    letter-spacing: 0.5px;
+    pointer-events: none;
+}
+.pad.active .pad-time {
+    color: rgba(0,0,0,0.7);
+}
+
+/* ============================================
+   SPEED CONTROLS
+   ============================================ */
+.speed-row {
+    display: flex;
+    justify-content: space-around;
+    padding: 12px 20px 4px;
+}
+.speed-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.speed-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-white);
+    letter-spacing: 1px;
+}
+.speed-btn {
+    background: linear-gradient(180deg, #d4d0c8 0%, #b8b4ac 40%, #a8a49c 100%);
+}
+.speed-btn.active-speed {
+    background: linear-gradient(180deg, #e8c8a8 0%, #d4a878 40%, #c09060 100%);
+}
+.speed-btn.active-speed .hw-btn-cap {
+    background: linear-gradient(180deg, #5a3020, #3a1a10);
+}
+
+/* ============================================
+   TRANSPORT CONTROLS
+   ============================================ */
+.transport-row {
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 20px 16px;
+}
+.transport-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.transport-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-white);
+    letter-spacing: 1.5px;
+}
+.transport-btn {
+    width: 56px;
+    height: 40px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.08s;
+}
+.transport-btn.red {
+    background: linear-gradient(145deg, #e03838 0%, #cc2828 30%, #aa1c1c 70%, #881414 100%);
+    box-shadow:
+        0 3px 0 #5a0e0e,
+        0 4px 6px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.transport-btn.red:active {
+    transform: translateY(2px);
+    box-shadow:
+        0 1px 0 #5a0e0e,
+        0 2px 3px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.transport-btn.silver {
+    background: linear-gradient(145deg, #d0ccc6 0%, #b8b4ae 30%, #a8a49e 70%, #989490 100%);
+    box-shadow:
+        0 3px 0 #6a6864,
+        0 4px 6px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.4);
+}
+.transport-btn.silver:active {
+    transform: translateY(2px);
+    box-shadow:
+        0 1px 0 #6a6864,
+        0 2px 3px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.4);
+}
+
+/* ============================================
+   TOAST NOTIFICATION
+   ============================================ */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(30,30,30,0.95);
+    color: var(--pad-active);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    padding: 10px 20px;
+    border-radius: 4px;
+    border: 1px solid rgba(68, 204, 68, 0.3);
+    pointer-events: none;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+}
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Scrollbar */
+.screen::-webkit-scrollbar { display: none; }
+.screen { scrollbar-width: none; }
+
+/* Responsive */
+@media (min-width: 500px) {
+    .screen1-container { padding-top: 80px; }
+}
+@media (max-height: 700px) {
+    .screen1-container { padding-top: 30px; }
+    .hakai-title { font-size: 60px; }
+}

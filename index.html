@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="HAKAI MPC">
+    <link rel="apple-touch-icon" href="icon-180.png">
+    <title>HAKAI MPC 2000</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ==================== SCREEN 1: LOADING CENTER ==================== -->
+    <div id="screen1" class="screen active">
+        <div class="screen1-container">
+            <h1 class="hakai-title">HAKAI</h1>
+            <p class="hakai-subtitle">MPC 2000 CRATE DIGGING CENTER</p>
+
+            <!-- Auth bar -->
+            <div class="auth-bar" id="authBar">
+                <button class="auth-btn" id="authBtn">
+                    <span class="auth-dot" id="authDot">&#9679;</span>
+                    <span id="authLabel">CONNECT YOUTUBE</span>
+                </button>
+            </div>
+
+            <div class="bezel">
+                <div class="lcd-screen">
+                    <div class="lcd-inner" id="formArea">
+                        <div class="form-group">
+                            <label for="keywords">KEYWORDS</label>
+                            <input type="text" id="keywords" placeholder="70s soul sample, obscure jazz..." value="70s soul sample">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="yearStart">FROM YEAR</label>
+                                <select id="yearStart"></select>
+                            </div>
+                            <div class="form-group half">
+                                <label for="yearEnd">TO YEAR</label>
+                                <select id="yearEnd"></select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="maxLength">MAX LENGTH</label>
+                                <select id="maxLength">
+                                    <option value="any">ANY</option>
+                                    <option value="short">&lt; 4 MIN</option>
+                                    <option value="medium" selected>4-20 MIN</option>
+                                    <option value="long">&gt; 20 MIN</option>
+                                </select>
+                            </div>
+                            <div class="form-group half">
+                                <label for="language">LANGUAGE</label>
+                                <select id="language">
+                                    <option value="">ANY</option>
+                                    <option value="en">ENGLISH</option>
+                                    <option value="ja">JAPANESE</option>
+                                    <option value="pt">PORTUGUESE</option>
+                                    <option value="fr">FRENCH</option>
+                                    <option value="es">SPANISH</option>
+                                    <option value="ko">KOREAN</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="playlistLength">PLAYLIST SIZE</label>
+                                <select id="playlistLength">
+                                    <option value="5">5</option>
+                                    <option value="10" selected>10</option>
+                                    <option value="15">15</option>
+                                    <option value="20">20</option>
+                                    <option value="25">25</option>
+                                </select>
+                            </div>
+                            <div class="form-group half">
+                                <label for="playlistName">PLAYLIST NAME</label>
+                                <input type="text" id="playlistName" placeholder="MY CRATE" value="CRATE 01">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="create-btn" id="createPlaylistBtn">
+                <span>CREATE PLAYLIST</span>
+            </button>
+
+            <div class="loading-indicator" id="loadingIndicator">
+                <div class="loading-dots">
+                    <span>DIGGING</span>
+                    <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SCREEN 2: INTERFACE ==================== -->
+    <div id="screen2" class="screen">
+        <div class="screen2-container">
+            <div class="header-bar">
+                <span class="header-hakai">HAKAI</span>
+                <span class="header-text">MPC 2000 CRATE DIGGING CENTER</span>
+                <img class="header-avatar" id="headerAvatar" src="" alt="" style="display:none;">
+            </div>
+
+            <div class="bezel bezel-sm">
+                <div class="display-unit">
+                    <div class="display-top-label">MUSIC PRODUCTION CENTER</div>
+                    <div class="player-area">
+                        <div id="ytPlayer"></div>
+                        <div class="green-overlay"></div>
+                        <div class="video-info" id="videoInfo">
+                            <span id="videoTitle">NO VIDEO LOADED</span>
+                            <span id="videoIndex">0 / 0</span>
+                        </div>
+                    </div>
+                    <div class="soft-keys">
+                        <button class="soft-key" id="btnF1">GEN NEW<br>PLAYLIST</button>
+                        <button class="soft-key" id="btnF2">ADD TO<br>PLAYLIST</button>
+                        <button class="soft-key" id="btnF3">WATCH<br>LATER</button>
+                        <button class="soft-key" id="btnF4">LIKE</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fkey-row">
+                <div class="hw-btn-small"><div class="hw-btn-cap"></div></div>
+                <div class="hw-btn-small"><div class="hw-btn-cap"></div></div>
+                <div class="hw-btn-small"><div class="hw-btn-cap"></div></div>
+                <div class="hw-btn-small"><div class="hw-btn-cap"></div></div>
+            </div>
+
+            <div class="pad-grid">
+                <div class="pad-cell"><span class="pad-label">PAD 10</span><button class="pad" data-pad="9"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 11</span><button class="pad" data-pad="10"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 12</span><button class="pad" data-pad="11"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 7</span><button class="pad" data-pad="6"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 8</span><button class="pad" data-pad="7"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 9</span><button class="pad" data-pad="8"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 4</span><button class="pad" data-pad="3"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 5</span><button class="pad" data-pad="4"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 6</span><button class="pad" data-pad="5"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 1</span><button class="pad" data-pad="0"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 2</span><button class="pad" data-pad="1"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 3</span><button class="pad" data-pad="2"><span class="pad-time"></span></button></div>
+            </div>
+
+            <div class="speed-row">
+                <div class="speed-cell"><span class="speed-label">-.5</span><button class="hw-btn-small speed-btn" data-speed="0.5"><div class="hw-btn-cap"></div></button></div>
+                <div class="speed-cell"><span class="speed-label">-.75</span><button class="hw-btn-small speed-btn" data-speed="0.75"><div class="hw-btn-cap"></div></button></div>
+                <div class="speed-cell"><span class="speed-label">1.25</span><button class="hw-btn-small speed-btn" data-speed="1.25"><div class="hw-btn-cap"></div></button></div>
+                <div class="speed-cell"><span class="speed-label">1.5</span><button class="hw-btn-small speed-btn" data-speed="1.5"><div class="hw-btn-cap"></div></button></div>
+            </div>
+
+            <div class="transport-row">
+                <div class="transport-cell"><span class="transport-label">LAST</span><button class="transport-btn red" id="btnLast"></button></div>
+                <div class="transport-cell"><span class="transport-label">NEXT</span><button class="transport-btn red" id="btnNext"></button></div>
+                <div class="transport-cell"><span class="transport-label">STOP</span><button class="transport-btn silver" id="btnStop"></button></div>
+                <div class="transport-cell"><span class="transport-label">PLAY</span><button class="transport-btn silver" id="btnPlay"></button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Google Identity Services (OAuth) -->
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="app.js"></script>
+</body>
+</html>
