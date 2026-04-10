@@ -1,8 +1,8 @@
 /* ============================================
-   HAKAI MPC 2000 — APP.JS (FIXED V3.1)
+   HAKAI MPC 2000 — APP.JS (V3.3 - Retry Loop Fix)
    YouTube OAuth + Randomized Crate Digging
    + Pad Chopping + Keyboard MPC + WAV Export
-   + 3-Second Skip Grid
+   + 3-Second Skip Grid + Auto-Retry Engine
    ============================================ */
 
 // ==========================================
@@ -105,7 +105,6 @@ function checkExistingLogin() {
     const savedToken = localStorage.getItem('hakai_yt_token');
     const expiresAt = localStorage.getItem('hakai_yt_expires');
 
-    // If a token exists and the current time is less than the expiration time...
     if (savedToken && expiresAt && Date.now() < parseInt(expiresAt)) {
         accessToken = savedToken;
         fetchUserProfile();
@@ -114,7 +113,6 @@ function checkExistingLogin() {
         authBtn.classList.add('signed-in');
         console.log('[HAKAI] Restored YouTube session from LocalStorage');
     } else {
-        // If it's expired or missing, wipe the slate clean
         localStorage.removeItem('hakai_yt_token');
         localStorage.removeItem('hakai_yt_expires');
     }
@@ -135,11 +133,8 @@ authBtn.addEventListener('click', () => {
     if (CONFIG.CLIENT_ID === 'YOUR_CLIENT_ID_HERE') { showToast('SET YOUR CLIENT_ID IN APP.JS'); return; }
     if (accessToken) {
         accessToken = null; userInfo = null; hakaiPlaylistId = null;
-        
-        // WIPE MEMORY ON MANUAL LOGOUT
         localStorage.removeItem('hakai_yt_token');
         localStorage.removeItem('hakai_yt_expires');
-        
         authDot.classList.remove('connected');
         authLabel.textContent = 'CONNECT YOUTUBE';
         authBtn.classList.remove('signed-in');
@@ -155,7 +150,7 @@ authBtn.addEventListener('click', () => {
 function onYouTubeIframeAPIReady() {
     console.log('[HAKAI] YouTube IFrame API ready');
     initGoogleAuth();
-    checkExistingLogin(); // <-- Triggers the silent login check
+    checkExistingLogin(); 
 }
 
 function initPlayer(videoId) {
@@ -184,7 +179,7 @@ function parseISO8601Duration(duration) {
 }
 
 // ==========================================
-// ★★★ RANDOMIZED SEARCH SYSTEM ★★★
+// ★★★ RANDOMIZED SEARCH SYSTEM (WITH RETRY) ★★★
 // ==========================================
 
 const QUERY_SUFFIXES = [
@@ -211,33 +206,41 @@ function randomPick(arr) {
 createBtn.addEventListener('click', async () => {
     const keywords = $('#keywords').value.trim();
     if (!keywords) { showToast('ENTER KEYWORDS'); return; }
+    
     createBtn.style.display = 'none';
     loadingIndicator.classList.add('show');
-    try {
-        const results = await searchYouTubeRandomized(
-            keywords,
-            yearStartSel.value,
-            yearEndSel.value,
-            $('#maxViews').value,
-            $('#language').value,
-            parseInt($('#playlistLength').value)
-        );
-        if (!results.length) {
-            showToast('NO RESULTS — TRY DIFFERENT KEYWORDS');
-            createBtn.style.display = '';
-            loadingIndicator.classList.remove('show');
-            return;
+    
+    let results = [];
+    let attempts = 0;
+    const maxAttempts = 4; // Auto-retry up to 4 times if the filter gets 0 results
+
+    while (attempts < maxAttempts && results.length === 0) {
+        try {
+            results = await searchYouTubeRandomized(
+                keywords,
+                yearStartSel.value,
+                yearEndSel.value,
+                $('#maxViews').value,
+                $('#language').value,
+                parseInt($('#playlistLength').value)
+            );
+        } catch (err) {
+            console.error('[HAKAI] Search error on attempt', attempts + 1, err);
         }
-        currentPlaylist = results;
-        currentVideoIndex = 0;
-        hakaiPlaylistId = null;
-        switchToScreen2();
-    } catch (err) {
-        console.error('[HAKAI] Search error:', err);
-        showToast('API ERROR — CHECK CONSOLE');
+        attempts++;
+    }
+
+    if (!results || results.length === 0) {
+        showToast('NO RESULTS — TRY DIFFERENT KEYWORDS');
         createBtn.style.display = '';
         loadingIndicator.classList.remove('show');
+        return;
     }
+
+    currentPlaylist = results;
+    currentVideoIndex = 0;
+    hakaiPlaylistId = null;
+    switchToScreen2();
 });
 
 async function searchYouTubeRandomized(keywords, yearStart, yearEnd, maxViews, language, maxResults) {
@@ -258,6 +261,8 @@ async function searchYouTubeRandomized(keywords, yearStart, yearEnd, maxViews, l
         key: CONFIG.API_KEY,
     });
     if (language) params.set('relevanceLanguage', language);
+
+    console.log(`[HAKAI] Digging: "${query}"`);
 
     const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
     if (!resp.ok) throw new Error(`YT API ${resp.status}`);
@@ -393,13 +398,11 @@ function doLast() {
     loadCurrentVideo(); showToast('◀◀ LAST');
 }
 
-// THE NEW SKIP LOGIC
 function doSkip(seconds) {
     if (!player || !playerReady) return;
     const currentTime = player.getCurrentTime();
     player.seekTo(currentTime + seconds, true);
     
-    // Resume playing if paused
     if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
         player.playVideo();
     }
@@ -546,22 +549,18 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    // TRANSPORT
     if (key === 'arrowleft') { e.preventDefault(); doLast(); return; }
     if (key === 'arrowright') { e.preventDefault(); doNext(); return; }
     if (key === ' ') { e.preventDefault(); doTogglePlayPause(); return; }
 
-    // SKIP BACK AND FORWARD ([ and ])
     if (key === '[') { e.preventDefault(); doSkip(-3); return; }
     if (key === ']') { e.preventDefault(); doSkip(3); return; }
 
-    // SOFT KEYS
     if (key === 'k') { e.preventDefault(); doGenNewPlaylist(); return; }
     if (key === 'l') { e.preventDefault(); addToPlaylist(); return; }
     if (key === ';') { e.preventDefault(); doNormalSpeed(); return; }
     if (key === "'") { e.preventDefault(); likeVideo(); return; }
 
-    // RECORD
     if (key === 'r') { e.preventDefault(); startRecording(); return; }
     if (key === 't') { e.preventDefault(); stopRecording(false); return; }
 });
@@ -683,4 +682,4 @@ function showToast(msg) {
     clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800);
 }
 document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v3.1');
+console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v3.3');
