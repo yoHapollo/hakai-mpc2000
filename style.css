@@ -1,5 +1,5 @@
 /* ============================================
-   HAKAI MPC 2000 — STYLE.CSS (V3.5)
+   HAKAI MPC 2000 — STYLE.CSS (V3.7 - Alignment Fix)
    Condensed iPhone-fit layout (no scroll)
    ============================================ */
 
@@ -151,8 +151,8 @@ html, body {
 .soft-key:active { background: rgba(255,255,255,0.05); color: #fff; }
 .soft-key.flash { color: var(--pad-active); }
 
-/* Changed to Grid to perfectly center under LCD text */
-.fkey-row { display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; padding: 6px 0; flex-shrink: 0; }
+/* --- THE FIX: 9px left/right padding aligns the 4-column grid with the 4-column soft keys inside the bezel --- */
+.fkey-row { display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; padding: 6px 9px; flex-shrink: 0; }
 .hw-btn-small {
     width: 50px; height: 14px;
     background: linear-gradient(180deg, #d4d0c8 0%, #b8b4ac 40%, #a8a49c 100%);
