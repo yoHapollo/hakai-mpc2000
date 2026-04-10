@@ -1,8 +1,8 @@
 /* ============================================
-   HAKAI MPC 2000 — APP.JS (V3.5 - Visual Update)
+   HAKAI MPC 2000 — APP.JS (V3.6 - Canvas Upgrades)
    YouTube OAuth + Randomized Crate Digging
    + Pad Chopping + Keyboard MPC + WAV Export
-   + Canvas Screenshot Engine + F-Key Sync
+   + Dynamic Canvas Wrap + Target Playlist
    ============================================ */
 
 // ==========================================
@@ -528,7 +528,7 @@ $$('.pad').forEach(padEl => {
 });
 
 // ==========================================
-// ★★★ SCREENSHOT ENGINE ★★★
+// ★★★ SCREENSHOT ENGINE (DYNAMIC WRAP UPDATE) ★★★
 // ==========================================
 async function doScreenshot() {
     const video = currentPlaylist[currentVideoIndex];
@@ -540,7 +540,6 @@ async function doScreenshot() {
         let publishedAt = "Unknown Date";
         let viewCount = "0";
 
-        // Fetch deep stats from YouTube
         const statsResp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${video.videoId}&key=${CONFIG.API_KEY}`);
         if (statsResp.ok) {
             const statsData = await statsResp.json();
@@ -552,7 +551,6 @@ async function doScreenshot() {
             }
         }
 
-        // Setup HTML5 Canvas
         const canvas = document.createElement('canvas');
         canvas.width = 1280;
         canvas.height = 720;
@@ -560,7 +558,6 @@ async function doScreenshot() {
         ctx.fillStyle = '#111111';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Fetch YouTube Thumbnail securely
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.src = `https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`;
@@ -571,13 +568,12 @@ async function doScreenshot() {
             fallbackImg.crossOrigin = "anonymous";
             fallbackImg.src = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
             fallbackImg.onload = () => drawAndSave(fallbackImg);
-            fallbackImg.onerror = () => drawAndSave(null); // Failsafe: Text on Black Background
+            fallbackImg.onerror = () => drawAndSave(null); 
         };
 
         function drawAndSave(loadedImg) {
             if (loadedImg) ctx.drawImage(loadedImg, 0, 0, 1280, 720);
 
-            // Dark gradient overlay to make text pop
             const grad = ctx.createLinearGradient(0, 0, 0, 720);
             grad.addColorStop(0, 'rgba(0,0,0,0.1)');
             grad.addColorStop(0.5, 'rgba(0,0,0,0.6)');
@@ -585,28 +581,56 @@ async function doScreenshot() {
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, 1280, 720);
 
-            // Inject Metadata Text
             ctx.fillStyle = '#44cc44';
             ctx.font = 'bold 30px "Courier New", monospace';
             ctx.fillText('MPC 2000 CRATE DIGGING CENTER', 50, 60);
 
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 60px "Courier New", monospace';
-            let title = video.title.replace(/\[.*?views\]/g, '').trim();
-            if(title.length > 38) title = title.substring(0, 38) + '...';
-            ctx.fillText(title, 50, 580);
+            // Clean Title
+            let rawTitle = video.title.replace(/\[.*?views\]/g, '').trim();
+
+            // Calculate Text Wrapping
+            ctx.font = 'bold 50px "Courier New", monospace';
+            let words = rawTitle.split(' ');
+            let lines = [];
+            let currentLine = '';
+            let maxWidth = 1180; 
             
+            for(let n = 0; n < words.length; n++) {
+                let testLine = currentLine + words[n] + ' ';
+                let metrics = ctx.measureText(testLine);
+                if (metrics.width > maxWidth && n > 0) {
+                    lines.push(currentLine);
+                    currentLine = words[n] + ' ';
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            lines.push(currentLine);
+
+            // Anchor Metadata to the bottom
             ctx.font = '35px "Courier New", monospace';
             ctx.fillStyle = '#cccccc';
-            ctx.fillText(`CHANNEL: ${channelName.toUpperCase()}`, 50, 640);
-            ctx.fillText(`RELEASED: ${publishedAt}  |  VIEWS: ${viewCount}`, 50, 690);
+            ctx.fillText(`RELEASED: ${publishedAt}  |  VIEWS: ${viewCount}`, 50, 680);
+            ctx.fillText(`CHANNEL: ${channelName.toUpperCase()}`, 50, 630);
 
-            // Export to Camera Roll / Downloads
+            // Build Title upwards from the metadata
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 50px "Courier New", monospace';
+            let titleY = 570 - ((lines.length - 1) * 55); 
+            for(let i=0; i<lines.length; i++) {
+                ctx.fillText(lines[i].trim(), 50, titleY + (i * 55));
+            }
+
             try {
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
                 const a = document.createElement('a');
+                
+                // Clean Filename Generator
+                let safeFilename = rawTitle.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, "-");
+                if (!safeFilename) safeFilename = "Crate-Dig-Sample";
+                
                 a.href = dataUrl;
-                a.download = `Crate-Dig-${video.videoId}.jpg`;
+                a.download = `${safeFilename}.jpg`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -632,7 +656,6 @@ $('#btnF2').addEventListener('click', addToPlaylist);
 $('#btnF3').addEventListener('click', doScreenshot);
 $('#btnF4').addEventListener('click', likeVideo);
 
-// Wire physical buttons underneath screen to trigger the F-keys
 const fkeyBtns = $$('.fkey-row .hw-btn-small');
 if(fkeyBtns[0]) fkeyBtns[0].addEventListener('click', () => $('#btnF1').click());
 if(fkeyBtns[1]) fkeyBtns[1].addEventListener('click', () => $('#btnF2').click());
@@ -806,4 +829,4 @@ function showToast(msg) {
     clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800);
 }
 document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v3.5');
+console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v3.6');
