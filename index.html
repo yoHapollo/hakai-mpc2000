@@ -163,31 +163,25 @@
                 <div class="speed-cell"><span class="speed-label">1.5</span><button class="hw-btn-small speed-btn" data-speed="1.5"><div class="hw-btn-cap"></div></button></div>
             </div>
 
-            <div class="transport-row">
-                <div class="transport-cell"><span class="transport-label">-3 SEC</span><button class="transport-btn silver" id="btnSkipBack"></button></div>
-                <div class="transport-cell"><span class="transport-label">+3 SEC</span><button class="transport-btn silver" id="btnSkipFwd"></button></div>
+            <div class="transport-grid">
+                <div class="t-cell"><span class="t-label">-3 SEC</span><button class="t-btn silver" id="btnSkipBack"></button></div>
+                <div class="t-cell"><span class="t-label">+3 SEC</span><button class="t-btn silver" id="btnSkipFwd"></button></div>
+                <div class="t-cell">
+                    <span class="t-label">REC</span>
+                    <button class="t-btn red" id="btnRec"><div class="rec-dot"></div></button>
+                </div>
+                <div class="t-cell">
+                    <span class="t-label">STOP REC</span>
+                    <button class="t-btn white" id="btnStopRec"><div class="rec-square"></div></button>
+                </div>
+
+                <div class="t-cell"><span class="t-label">LAST</span><button class="t-btn red" id="btnLast"></button></div>
+                <div class="t-cell"><span class="t-label">NEXT</span><button class="t-btn red" id="btnNext"></button></div>
+                <div class="t-cell"><span class="t-label">STOP</span><button class="t-btn silver" id="btnStop"></button></div>
+                <div class="t-cell"><span class="t-label">PLAY</span><button class="t-btn silver" id="btnPlay"></button></div>
             </div>
 
-            <div class="transport-row">
-                <div class="transport-cell"><span class="transport-label">LAST</span><button class="transport-btn red" id="btnLast"></button></div>
-                <div class="transport-cell"><span class="transport-label">NEXT</span><button class="transport-btn red" id="btnNext"></button></div>
-                <div class="transport-cell"><span class="transport-label">STOP</span><button class="transport-btn silver" id="btnStop"></button></div>
-                <div class="transport-cell"><span class="transport-label">PLAY</span><button class="transport-btn silver" id="btnPlay"></button></div>
-            </div>
-
-            <div class="record-row">
-                <div class="transport-cell">
-                    <span class="transport-label">REC</span>
-                    <button class="transport-btn rec" id="btnRec">
-                        <div class="rec-dot"></div>
-                    </button>
-                </div>
-                <div class="transport-cell">
-                    <span class="transport-label">STOP REC</span>
-                    <button class="transport-btn rec-stop" id="btnStopRec">
-                        <div class="rec-square"></div>
-                    </button>
-                </div>
+            <div class="rec-status-bar">
                 <div class="rec-status" id="recStatus"></div>
             </div>
         </div>
