@@ -1,6 +1,6 @@
 /* ============================================
-   HAKAI MPC 2000 — STYLE.CSS (V3.7 - Alignment Fix)
-   Condensed iPhone-fit layout (no scroll)
+   HAKAI MPC 2000 — STYLE.CSS (V3.8 - Desktop Layout)
+   Mobile stacked / Desktop horizontal grid
    ============================================ */
 
 :root {
@@ -40,6 +40,7 @@ html, body {
 .screen::-webkit-scrollbar { display: none; }
 .screen { scrollbar-width: none; }
 
+/* ========== SCREEN 1 ========== */
 .screen1-container {
     width: 100%; max-width: 420px; margin: 0 auto;
     padding: 50px 20px 40px;
@@ -102,6 +103,7 @@ html, body {
 .loading-dots .dot:nth-child(4) { animation-delay: 0.6s; }
 @keyframes blink { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 
+/* ========== SCREEN 2 (MOBILE DEFAULT) ========== */
 .screen2-container {
     width: 100%; max-width: 420px; margin: 0 auto;
     padding: env(safe-area-inset-top, 4px) 10px env(safe-area-inset-bottom, 4px);
@@ -124,10 +126,7 @@ html, body {
     background: linear-gradient(145deg, #3d6b2e, #5a8a4a, #4a7a3a);
     border-radius: 3px; overflow: hidden; box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
 }
-.player-area iframe { 
-    position: absolute; top: 0; left: 0; 
-    width: 100%; height: 100%; border: none; 
-}
+.player-area iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
 .green-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(74,122,58,0.15); mix-blend-mode: multiply; pointer-events: none; z-index: 2;
@@ -139,7 +138,6 @@ html, body {
 }
 #videoTitle { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 6px; }
 
-/* F-KEYS GRID (ALIGNED) */
 .soft-keys { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid #333; }
 .soft-key {
     background: transparent; border: none; border-right: 1px solid #333;
@@ -151,7 +149,6 @@ html, body {
 .soft-key:active { background: rgba(255,255,255,0.05); color: #fff; }
 .soft-key.flash { color: var(--pad-active); }
 
-/* --- THE FIX: 9px left/right padding aligns the 4-column grid with the 4-column soft keys inside the bezel --- */
 .fkey-row { display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; padding: 6px 9px; flex-shrink: 0; }
 .hw-btn-small {
     width: 50px; height: 14px;
@@ -243,6 +240,7 @@ html, body {
 .rec-status.active { animation: rec-text-blink 0.8s infinite; }
 @keyframes rec-text-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
+/* ========== TOAST ========== */
 .toast {
     position: fixed; bottom: 20px; left: 50%;
     transform: translateX(-50%) translateY(80px);
@@ -253,6 +251,7 @@ html, body {
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
+/* ========== SAVE MODAL ========== */
 .modal-overlay {
     display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
@@ -288,5 +287,49 @@ html, body {
 }
 .modal-save:active { transform: translateY(1px); }
 
-@media (min-width: 500px) { .screen1-container { padding-top: 80px; } }
-@media (max-height: 700px) { .screen1-container { padding-top: 30px; } }
+/* ========================================
+   ★★★ THE DESKTOP HARDWARE GRID ★★★
+   Activates automatically on screens wider than 800px
+   ======================================== */
+@media (min-width: 800px) {
+    .screen1-container { padding-top: 80px; }
+    
+    .screen2-container {
+        max-width: 900px;
+        padding-top: 40px;
+        display: grid;
+        grid-template-columns: 1.25fr 1fr; /* Screen on left, Pads on right */
+        grid-template-areas:
+            "header    header"
+            "screen    pads"
+            "fkeys     speed"
+            "empty     transport"
+            "empty     recstat";
+        gap: 15px 40px;
+        align-content: center;
+        height: auto;
+    }
+
+    /* Assigning the HTML elements to the Grid slots */
+    .header-bar     { grid-area: header; margin-bottom: 20px; }
+    .bezel          { grid-area: screen; margin-top: 0; align-self: start; }
+    .fkey-row       { grid-area: fkeys; padding-top: 10px; }
+    .pad-grid       { grid-area: pads; }
+    .speed-row      { grid-area: speed; padding-top: 0; }
+    .transport-grid { grid-area: transport; }
+    .rec-status-bar { grid-area: recstat; }
+
+    /* Scaling up hardware elements for desktop feel */
+    .pad { min-height: 80px; }
+    .pad-label { font-size: 10px; margin-bottom: 4px; }
+    .t-btn { height: 40px; }
+    .t-label { font-size: 10px; margin-bottom: 4px; }
+    .speed-label { font-size: 12px; margin-bottom: 4px; }
+    .hw-btn-small { height: 18px; width: 60px; }
+    
+    /* Make the text clearer on larger screens */
+    .header-text { font-size: 14px; }
+    .display-top-label { font-size: 10px; }
+    .video-info { font-size: 10px; padding: 4px 10px; }
+    .soft-key { font-size: 9px; padding: 8px 4px; }
+}
