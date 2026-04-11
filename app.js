@@ -8,7 +8,7 @@
 // For production, move this to a backend proxy to keep it secure.
 // See API_KEY_FIX.md for instructions.
 const CONFIG = {
-    API_KEY: 'AIzaSyAhYhsr-kYUukMZFNAgV6jDg1FGi065wT4', // ⚠️ REPLACE THIS - Currently returning 403
+    API_KEY: 'AIzaSyDaHVAAXKFjOiXc7pw9exh92MJYXIQ4Kvg', // ⚠️ REPLACE THIS - Currently returning 403
     CLIENT_ID: '564150027983-aero1s5g4ctnm5iihv3c1un23rc2mnk5.apps.googleusercontent.com',
     SCOPES: 'https://www.googleapis.com/auth/youtube',
 };
