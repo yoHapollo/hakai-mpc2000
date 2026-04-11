@@ -1,13 +1,9 @@
 /* ============================================
-   HAKAI MPC 2000 — APP.JS (V4.0)
+   HAKAI MPC 2000 — APP.JS (V4.1)
    YouTube OAuth + Randomized Crate Digging
-   + Pad Chopping + Canvas Screenshot Engine
-   + Integrated Drum Break Loops
+   + Web Audio API Gapless Drum Loop Engine
    ============================================ */
 
-// ==========================================
-// ▶▶▶  YOUR CREDENTIALS — EDIT THESE  ◀◀◀
-// ==========================================
 const CONFIG = {
     API_KEY: 'AIzaSyDaHVAAXKFjOiXc7pw9exh92MJYXIQ4Kvg',
     CLIENT_ID: '564150027983-aero1s5g4ctnm5iihv3c1un23rc2mnk5.apps.googleusercontent.com',
@@ -33,8 +29,6 @@ let recordedChunks = [];
 let isRecording = false;
 let recStartTime = 0;
 let recTimerInterval = null;
-let audioContext = null;
-let audioStream = null;
 
 // ==========================================
 // DOM REFS
@@ -58,45 +52,84 @@ const recStatus = $('#recStatus');
 const saveModal = $('#saveModal');
 
 // ==========================================
-// DRUM BREAK ENGINE
+// DRUM BREAK ENGINE (Web Audio API - Gapless)
 // ==========================================
-const breaks = {
-    1: new Audio('BREAK_1_97.mp3'),
-    2: new Audio('BREAK_2_80.mp3'),
-    3: new Audio('BREAK_3_70.mp3'),
-    4: new Audio('BREAK_4_87.mp3')
+const breakUrls = {
+    1: 'BREAK_1_97.mp3',
+    2: 'BREAK_2_80.mp3',
+    3: 'BREAK_3_70.mp3',
+    4: 'BREAK_4_87.mp3'
 };
 
-// Force perfect looping on all audio files
-Object.values(breaks).forEach(audio => audio.loop = true);
-
+const breakBuffers = {};
+let breakSource = null;
 let activeBreak = null;
+let breakAudioCtx = null;
+
+// Fetches the MP3s and decodes them straight into RAM for zero-latency loops
+async function loadBreaks() {
+    breakAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    for (let key in breakUrls) {
+        try {
+            const resp = await fetch(breakUrls[key]);
+            const arrBuf = await resp.arrayBuffer();
+            const audBuf = await breakAudioCtx.decodeAudioData(arrBuf);
+            breakBuffers[key] = audBuf;
+        } catch(e) {
+            console.error('Failed to load break', key, e);
+        }
+    }
+}
 
 $$('.break-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
         const breakId = btn.dataset.break;
 
-        // If clicking the currently playing break, stop it completely
+        // Initialize audio engine on first click
+        if (!breakAudioCtx) {
+            showToast('LOADING DRUMS...');
+            await loadBreaks();
+        }
+        // Unlock browser audio state if blocked
+        if (breakAudioCtx.state === 'suspended') {
+            await breakAudioCtx.resume();
+        }
+
+        // Toggle logic
         if (activeBreak === breakId) {
-            breaks[breakId].pause();
-            breaks[breakId].currentTime = 0;
+            if (breakSource) { 
+                breakSource.stop(); 
+                breakSource.disconnect(); 
+                breakSource = null; 
+            }
             btn.classList.remove('active');
             activeBreak = null;
             showToast(`BREAK ${breakId} STOPPED`);
         } else {
-            // Stop any other currently playing break first
+            // Stop any currently playing breaks first
+            if (breakSource) { 
+                breakSource.stop(); 
+                breakSource.disconnect(); 
+            }
             if (activeBreak) {
-                breaks[activeBreak].pause();
-                breaks[activeBreak].currentTime = 0;
                 const prevBtn = $(`.break-btn[data-break="${activeBreak}"]`);
                 if (prevBtn) prevBtn.classList.remove('active');
             }
-            
-            // Play the newly selected break
-            breaks[breakId].play().catch(e => console.error("Audio playback failed:", e));
-            btn.classList.add('active');
-            activeBreak = breakId;
-            showToast(`PLAYING BREAK ${breakId}`);
+
+            // Fire new break
+            if (breakBuffers[breakId]) {
+                breakSource = breakAudioCtx.createBufferSource();
+                breakSource.buffer = breakBuffers[breakId];
+                breakSource.loop = true; // The magic gapless loop line
+                breakSource.connect(breakAudioCtx.destination);
+                breakSource.start();
+
+                btn.classList.add('active');
+                activeBreak = breakId;
+                showToast(`PLAYING BREAK ${breakId}`);
+            } else {
+                showToast('DRUMS STILL LOADING...');
+            }
         }
     });
 });
@@ -129,11 +162,9 @@ function initGoogleAuth() {
 function handleTokenResponse(resp) {
     if (resp.error) { showToast('SIGN IN FAILED'); return; }
     accessToken = resp.access_token;
-    
     const expiresAt = Date.now() + (resp.expires_in * 1000); 
     localStorage.setItem('hakai_yt_token', accessToken);
     localStorage.setItem('hakai_yt_expires', expiresAt.toString());
-
     fetchUserProfile();
     authDot.classList.add('connected');
     authLabel.textContent = 'CONNECTED';
@@ -144,14 +175,12 @@ function handleTokenResponse(resp) {
 function checkExistingLogin() {
     const savedToken = localStorage.getItem('hakai_yt_token');
     const expiresAt = localStorage.getItem('hakai_yt_expires');
-
     if (savedToken && expiresAt && Date.now() < parseInt(expiresAt)) {
         accessToken = savedToken;
         fetchUserProfile();
         authDot.classList.add('connected');
         authLabel.textContent = 'CONNECTED';
         authBtn.classList.add('signed-in');
-        console.log('[HAKAI] Restored YouTube session from LocalStorage');
     } else {
         localStorage.removeItem('hakai_yt_token');
         localStorage.removeItem('hakai_yt_expires');
@@ -160,9 +189,7 @@ function checkExistingLogin() {
 
 async function fetchUserProfile() {
     try {
-        const resp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-            headers: { Authorization: `Bearer ${accessToken}` }
-        });
+        const resp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', { headers: { Authorization: `Bearer ${accessToken}` }});
         userInfo = await resp.json();
         if (userInfo.picture) { headerAvatar.src = userInfo.picture; headerAvatar.style.display = 'block'; }
         if (userInfo.name) authLabel.textContent = userInfo.name.toUpperCase();
@@ -170,7 +197,6 @@ async function fetchUserProfile() {
 }
 
 authBtn.addEventListener('click', () => {
-    if (CONFIG.CLIENT_ID === 'YOUR_CLIENT_ID_HERE') { showToast('SET YOUR CLIENT_ID IN APP.JS'); return; }
     if (accessToken) {
         accessToken = null; userInfo = null;
         localStorage.removeItem('hakai_yt_token');
@@ -188,7 +214,6 @@ authBtn.addEventListener('click', () => {
 // YOUTUBE IFRAME API
 // ==========================================
 function onYouTubeIframeAPIReady() {
-    console.log('[HAKAI] YouTube IFrame API ready');
     initGoogleAuth();
     checkExistingLogin(); 
 }
@@ -196,50 +221,27 @@ function onYouTubeIframeAPIReady() {
 function initPlayer(videoId) {
     playerReady = false;
     player = new YT.Player('ytPlayer', {
-        width: '100%', height: '100%',
-        videoId: videoId,
+        width: '100%', height: '100%', videoId: videoId,
         playerVars: { autoplay: 1, controls: 1, modestbranding: 1, rel: 0, playsinline: 1, fs: 0 },
-        events: { 
-            onReady: (e) => { 
-                playerReady = true; 
-                e.target.playVideo(); 
-            }, 
-            onStateChange: () => {} 
-        }
+        events: { onReady: (e) => { playerReady = true; e.target.playVideo(); } }
     });
 }
 
 function parseISO8601Duration(duration) {
     if (!duration) return 0;
     const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-    const hours = parseInt(match[1]) || 0;
-    const minutes = parseInt(match[2]) || 0;
-    const seconds = parseInt(match[3]) || 0;
-    return (hours * 3600) + (minutes * 60) + seconds;
+    return ((parseInt(match[1]) || 0) * 3600) + ((parseInt(match[2]) || 0) * 60) + (parseInt(match[3]) || 0);
 }
 
 // ==========================================
-// ★★★ RANDOMIZED SEARCH SYSTEM ★★★
+// RANDOMIZED SEARCH SYSTEM
 // ==========================================
-const QUERY_SUFFIXES = [
-    'vinyl', 'original', 'rare', 'album track',
-    'audio', 'HQ', 'remastered', 'single', 'official audio',
-    'deep cut', 'B side', 'obscure', 'forgotten', 'classic',
-    'groove', 'original mix', 'studio', 'LP', 'full album',
-    'underground', 'lost', '45 rpm', 'compilation'
-];
+const QUERY_SUFFIXES = ['vinyl', 'original', 'rare', 'album track', 'audio', 'HQ', 'remastered', 'single', 'official audio', 'deep cut', 'B side', 'obscure', 'forgotten', 'classic', 'groove', 'original mix', 'studio', 'LP', 'full album', 'underground', 'lost', '45 rpm', 'compilation'];
 
 function shuffleArray(arr) {
     const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-    }
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
     return a;
-}
-
-function randomPick(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
 }
 
 createBtn.addEventListener('click', async () => {
@@ -251,452 +253,230 @@ createBtn.addEventListener('click', async () => {
     
     let results = [];
     let attempts = 0;
-    const maxAttempts = 4;
-
-    while (attempts < maxAttempts && results.length === 0) {
+    while (attempts < 4 && results.length === 0) {
         try {
-            results = await searchYouTubeRandomized(
-                keywords,
-                yearStartSel.value,
-                yearEndSel.value,
-                $('#maxViews').value,
-                $('#language').value,
-                parseInt($('#playlistLength').value)
-            );
-        } catch (err) {
-            console.error('[HAKAI] Search error on attempt', attempts + 1, err);
-        }
+            results = await searchYouTubeRandomized(keywords, yearStartSel.value, yearEndSel.value, $('#maxViews').value, $('#language').value, parseInt($('#playlistLength').value));
+        } catch (err) {}
         attempts++;
     }
 
     if (!results || results.length === 0) {
         showToast('NO RESULTS — TRY DIFFERENT KEYWORDS');
-        createBtn.style.display = '';
-        loadingIndicator.classList.remove('show');
-        return;
+        createBtn.style.display = ''; loadingIndicator.classList.remove('show'); return;
     }
 
-    currentPlaylist = results;
-    currentVideoIndex = 0;
-    switchToScreen2();
+    currentPlaylist = results; currentVideoIndex = 0; switchToScreen2();
 });
 
 async function searchYouTubeRandomized(keywords, yearStart, yearEnd, maxViews, language, maxResults) {
-    const suffix = randomPick(QUERY_SUFFIXES);
-    const negativeKeywords = '-"type beat" -"sample pack" -tutorial -how -remake -lesson -review -documentary -reaction -vlog -podcast';
-    const startY = parseInt(yearStart);
-    const endY = parseInt(yearEnd);
-    const randomYearInEra = Math.floor(Math.random() * (endY - startY + 1)) + startY;
-    const query = `${keywords} ${randomYearInEra} ${suffix} ${negativeKeywords}`;
+    const suffix = QUERY_SUFFIXES[Math.floor(Math.random() * QUERY_SUFFIXES.length)];
+    const randomYear = Math.floor(Math.random() * (parseInt(yearEnd) - parseInt(yearStart) + 1)) + parseInt(yearStart);
+    const query = `${keywords} ${randomYear} ${suffix} -"type beat" -"sample pack" -tutorial -how -remake -lesson -review -documentary -reaction -vlog -podcast`;
 
-    const params = new URLSearchParams({
-        part: 'snippet',
-        type: 'video',
-        q: query,
-        maxResults: 50,
-        order: randomPick(['relevance', 'rating']),
-        videoCategoryId: '10',
-        key: CONFIG.API_KEY,
-    });
+    const params = new URLSearchParams({ part: 'snippet', type: 'video', q: query, maxResults: 50, order: Math.random() > 0.5 ? 'relevance' : 'rating', videoCategoryId: '10', key: CONFIG.API_KEY });
     if (language) params.set('relevanceLanguage', language);
-
-    console.log(`[HAKAI] Digging: "${query}"`);
 
     const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
     if (!resp.ok) throw new Error(`YT API ${resp.status}`);
-    const data = await resp.json();
-
-    let videos = (data.items || [])
-        .filter(item => item.id && item.id.videoId)
-        .map(item => ({ videoId: item.id.videoId, title: item.snippet.title }));
-
+    
+    let videos = (await resp.json()).items.filter(i => i.id && i.id.videoId).map(i => ({ videoId: i.id.videoId, title: i.snippet.title }));
+    
     const seen = new Set();
-    videos = videos.filter(v => {
-        if (seen.has(v.videoId)) return false;
-        seen.add(v.videoId);
-        return true;
-    });
+    videos = videos.filter(v => { if (seen.has(v.videoId)) return false; seen.add(v.videoId); return true; });
 
     if (videos.length > 0) {
         const ids = videos.map(v => v.videoId).join(',');
-        const statsResp = await fetch(
-            `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id=${ids}&key=${CONFIG.API_KEY}`
-        );
-        
+        const statsResp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id=${ids}&key=${CONFIG.API_KEY}`);
         if (statsResp.ok) {
             const statsData = await statsResp.json();
-            const viewMap = {};
-            const durationMap = {};
-            
-            (statsData.items || []).forEach(item => {
-                viewMap[item.id] = parseInt(item.statistics.viewCount) || 0;
-                durationMap[item.id] = parseISO8601Duration(item.contentDetails.duration);
-            });
-
+            const viewMap = {}; const durationMap = {};
+            (statsData.items || []).forEach(item => { viewMap[item.id] = parseInt(item.statistics.viewCount) || 0; durationMap[item.id] = parseISO8601Duration(item.contentDetails.duration); });
             const maxViewCount = maxViews !== 'any' ? parseInt(maxViews) : Infinity;
-
-            videos = videos.filter(v => {
-                const views = viewMap[v.videoId];
-                const durationSecs = durationMap[v.videoId];
-                const passesViews = views !== undefined && views <= maxViewCount;
-                const passesDuration = durationSecs !== undefined && durationSecs >= 75 && durationSecs <= 900;
-                return passesViews && passesDuration;
-            });
-
-            videos = videos.map(v => ({
-                ...v,
-                title: v.title + ` [${formatViewCount(viewMap[v.videoId])} views]`
-            }));
+            videos = videos.filter(v => viewMap[v.videoId] <= maxViewCount && durationMap[v.videoId] >= 75 && durationMap[v.videoId] <= 900);
+            videos = videos.map(v => ({ ...v, title: v.title + ` [${formatViewCount(viewMap[v.videoId])} views]` }));
         }
     }
-
-    videos = shuffleArray(videos);
-    return videos.slice(0, maxResults);
+    return shuffleArray(videos).slice(0, maxResults);
 }
 
-function formatViewCount(n) {
-    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-    return String(n);
-}
+function formatViewCount(n) { return n >= 1000000 ? (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n); }
 
 // ==========================================
-// ★★★ YOUTUBE AUTHENTICATED ACTIONS ★★★
+// YOUTUBE AUTHENTICATED ACTIONS
 // ==========================================
 async function ytApi(endpoint, method = 'GET', body = null) {
-    if (!accessToken) return null;
     const opts = { method, headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } };
     if (body) opts.body = JSON.stringify(body);
     const resp = await fetch(`https://www.googleapis.com/youtube/v3/${endpoint}`, opts);
     if (!resp.ok) throw new Error(`YT API ${resp.status}`);
-    if (resp.status === 204) return {};
-    return resp.json();
+    return resp.status === 204 ? {} : resp.json();
 }
 
 async function addToPlaylist() {
-    const video = currentPlaylist[currentVideoIndex];
-    if (!video) return;
+    if (!currentPlaylist[currentVideoIndex]) return;
     if (!accessToken) { showToast('SIGN IN TO ADD TO YT PLAYLIST'); return; }
-
-    const TARGET_PLAYLIST_ID = 'PLLVBqHeyUt0DYFxk20wKv495txAKAg9eu';
-
     try {
-        await ytApi('playlistItems?part=snippet', 'POST', {
-            snippet: {
-                playlistId: TARGET_PLAYLIST_ID,
-                resourceId: { kind: 'youtube#video', videoId: video.videoId }
-            }
-        });
-        flashKey('#btnF2');
-        showToast('ADDED TO TARGET PLAYLIST');
-    } catch (e) {
-        console.error('[HAKAI] Playlist Add Error:', e);
-        showToast('PLAYLIST ERROR — CHECK PERMISSIONS');
-    }
+        await ytApi('playlistItems?part=snippet', 'POST', { snippet: { playlistId: 'PLLVBqHeyUt0DYFxk20wKv495txAKAg9eu', resourceId: { kind: 'youtube#video', videoId: currentPlaylist[currentVideoIndex].videoId } } });
+        flashKey('#btnF2'); showToast('ADDED TO TARGET PLAYLIST');
+    } catch (e) { showToast('PLAYLIST ERROR'); }
 }
 
 async function likeVideo() {
-    const video = currentPlaylist[currentVideoIndex];
-    if (!video) return;
+    if (!currentPlaylist[currentVideoIndex]) return;
     if (!accessToken) { showToast('SIGN IN TO LIKE YT VIDEO'); return; }
-
     try {
-        await ytApi(`videos/rate?id=${video.videoId}&rating=like`, 'POST');
-        flashKey('#btnF4');
-        showToast('♥ LIKED ON YOUTUBE');
-    } catch (e) {
-        console.error('[HAKAI] Like Error:', e);
-        showToast('LIKE ERROR');
-    }
+        await ytApi(`videos/rate?id=${currentPlaylist[currentVideoIndex].videoId}&rating=like`, 'POST');
+        flashKey('#btnF4'); showToast('♥ LIKED ON YOUTUBE');
+    } catch (e) { showToast('LIKE ERROR'); }
 }
 
 // ==========================================
 // SCREEN TRANSITIONS
 // ==========================================
 function switchToScreen2() {
-    screen1.classList.remove('active');
-    screen2.classList.add('active');
-    loadingIndicator.classList.remove('show');
-    createBtn.style.display = '';
-    clearAllPads(); currentSpeed = 1.0; updateSpeedUI();
-    loadCurrentVideo();
+    screen1.classList.remove('active'); screen2.classList.add('active');
+    loadingIndicator.classList.remove('show'); createBtn.style.display = '';
+    clearAllPads(); currentSpeed = 1.0; updateSpeedUI(); loadCurrentVideo();
 }
 
 function switchToScreen1() {
     if (isRecording) stopRecording(true);
     if (player && playerReady) player.pauseVideo();
-    
-    // Stop breaks if we go back to screen 1
-    if (activeBreak) {
-        breaks[activeBreak].pause();
-        breaks[activeBreak].currentTime = 0;
-        const prevBtn = $(`.break-btn[data-break="${activeBreak}"]`);
-        if (prevBtn) prevBtn.classList.remove('active');
-        activeBreak = null;
-    }
-
-    screen2.classList.remove('active');
-    screen1.classList.add('active');
+    if (breakSource) { breakSource.stop(); breakSource.disconnect(); breakSource = null; }
+    if (activeBreak) { $(`.break-btn[data-break="${activeBreak}"]`)?.classList.remove('active'); activeBreak = null; }
+    screen2.classList.remove('active'); screen1.classList.add('active');
 }
 
 function loadCurrentVideo() {
     const video = currentPlaylist[currentVideoIndex];
     if (!video) return;
-    
-    videoTitleEl.textContent = video.title;
-    videoIndexEl.textContent = `${currentVideoIndex + 1} / ${currentPlaylist.length}`;
-    
-    if (!player) {
-        initPlayer(video.videoId);
-    } else {
-        if (playerReady) player.loadVideoById(video.videoId); 
-    }
+    videoTitleEl.textContent = video.title; videoIndexEl.textContent = `${currentVideoIndex + 1} / ${currentPlaylist.length}`;
+    if (!player) initPlayer(video.videoId); else if (playerReady) player.loadVideoById(video.videoId); 
 }
 
 // ==========================================
 // TRANSPORT CONTROLS & SKIP
 // ==========================================
-function doPlay() { if (player && playerReady) { player.playVideo(); showToast('▶ PLAY'); } }
-function doStop() { if (player && playerReady) { player.pauseVideo(); showToast('■ STOP'); } }
-function doTogglePlayPause() {
-    if (!player || !playerReady) return;
-    const state = player.getPlayerState();
-    if (state === YT.PlayerState.PLAYING) { doStop(); }
-    else { doPlay(); }
-}
+function doPlay() { if (playerReady) { player.playVideo(); showToast('▶ PLAY'); } }
+function doStop() { if (playerReady) { player.pauseVideo(); showToast('■ STOP'); } }
+function doTogglePlayPause() { if (playerReady) player.getPlayerState() === YT.PlayerState.PLAYING ? doStop() : doPlay(); }
 function doNext() {
     if (!currentPlaylist.length) return;
     if (isRecording) stopRecording(true);
     currentVideoIndex = (currentVideoIndex + 1) % currentPlaylist.length;
-    clearAllPads(); currentSpeed = 1.0; updateSpeedUI();
-    loadCurrentVideo(); showToast('NEXT ▶▶');
+    clearAllPads(); currentSpeed = 1.0; updateSpeedUI(); loadCurrentVideo(); showToast('NEXT ▶▶');
 }
 function doLast() {
     if (!currentPlaylist.length) return;
     if (isRecording) stopRecording(true);
     currentVideoIndex = (currentVideoIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
-    clearAllPads(); currentSpeed = 1.0; updateSpeedUI();
-    loadCurrentVideo(); showToast('◀◀ LAST');
+    clearAllPads(); currentSpeed = 1.0; updateSpeedUI(); loadCurrentVideo(); showToast('◀◀ LAST');
+}
+function doSkip(secs) {
+    if (playerReady) { player.seekTo(player.getCurrentTime() + secs, true); if (player.getPlayerState() !== YT.PlayerState.PLAYING) player.playVideo(); }
+    showToast(secs > 0 ? '+3 SECONDS' : '-3 SECONDS');
 }
 
-function doSkip(seconds) {
-    if (!player || !playerReady) return;
-    const currentTime = player.getCurrentTime();
-    player.seekTo(currentTime + seconds, true);
-    
-    if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
-        player.playVideo();
-    }
-    
-    showToast(seconds > 0 ? '+3 SECONDS' : '-3 SECONDS');
-}
-
-$('#btnPlay').addEventListener('click', doPlay);
-$('#btnStop').addEventListener('click', doStop);
-$('#btnNext').addEventListener('click', doNext);
-$('#btnLast').addEventListener('click', doLast);
-$('#btnSkipBack').addEventListener('click', () => doSkip(-3));
-$('#btnSkipFwd').addEventListener('click', () => doSkip(3));
+$('#btnPlay').addEventListener('click', doPlay); $('#btnStop').addEventListener('click', doStop);
+$('#btnNext').addEventListener('click', doNext); $('#btnLast').addEventListener('click', doLast);
+$('#btnSkipBack').addEventListener('click', () => doSkip(-3)); $('#btnSkipFwd').addEventListener('click', () => doSkip(3));
 
 // ==========================================
 // SPEED CONTROLS
 // ==========================================
 function setSpeed(targetSpeed) {
-    if (currentSpeed === targetSpeed) {
-        currentSpeed = 1.0;
-        if (player && playerReady) player.setPlaybackRate(1.0);
-        showToast('SPEED: 1.0x');
-    } else {
-        currentSpeed = targetSpeed;
-        if (player && playerReady) player.setPlaybackRate(targetSpeed);
-        showToast(`SPEED: ${targetSpeed}x`);
-    }
-    updateSpeedUI();
+    currentSpeed = currentSpeed === targetSpeed ? 1.0 : targetSpeed;
+    if (playerReady) player.setPlaybackRate(currentSpeed);
+    updateSpeedUI(); showToast(`SPEED: ${currentSpeed}x`);
 }
-
-$$('.speed-btn').forEach(btn => {
-    btn.addEventListener('click', () => setSpeed(parseFloat(btn.dataset.speed)));
-});
-
-function updateSpeedUI() {
-    $$('.speed-btn').forEach(btn => {
-        btn.classList.toggle('active-speed', parseFloat(btn.dataset.speed) === currentSpeed && currentSpeed !== 1.0);
-    });
-}
+$$('.speed-btn').forEach(btn => btn.addEventListener('click', () => setSpeed(parseFloat(btn.dataset.speed))));
+function updateSpeedUI() { $$('.speed-btn').forEach(b => b.classList.toggle('active-speed', parseFloat(b.dataset.speed) === currentSpeed && currentSpeed !== 1.0)); }
 
 // ==========================================
 // PAD SYSTEM
 // ==========================================
 function getPadEl(idx) { return $(`.pad[data-pad="${idx}"]`); }
-
 function triggerPad(idx) {
-    if (!player || !playerReady) return;
+    if (!playerReady) return;
     const padEl = getPadEl(idx);
-    if (!padEl) return;
-
     if (pads[idx] === null) {
-        const time = player.getCurrentTime();
-        pads[idx] = time;
-        padEl.classList.add('active');
-        padEl.querySelector('.pad-time').textContent = formatTime(time);
-        showToast(`PAD ${idx + 1} SET — ${formatTime(time)}`);
+        pads[idx] = player.getCurrentTime();
+        padEl.classList.add('active'); padEl.querySelector('.pad-time').textContent = formatTime(pads[idx]);
+        showToast(`PAD ${idx + 1} SET`);
     } else {
-        player.seekTo(pads[idx], true);
-        player.playVideo();
-        padEl.style.filter = 'brightness(1.5)';
-        setTimeout(() => { padEl.style.filter = ''; }, 120);
+        player.seekTo(pads[idx], true); player.playVideo();
+        padEl.style.filter = 'brightness(1.5)'; setTimeout(() => { padEl.style.filter = ''; }, 120);
     }
 }
-
 function clearPad(idx) {
     if (pads[idx] !== null) {
-        pads[idx] = null;
-        const padEl = getPadEl(idx);
-        if (padEl) {
-            padEl.classList.remove('active');
-            padEl.querySelector('.pad-time').textContent = '';
-        }
+        pads[idx] = null; getPadEl(idx).classList.remove('active'); getPadEl(idx).querySelector('.pad-time').textContent = '';
         showToast(`PAD ${idx + 1} CLEARED`);
     }
 }
-
-function clearAllPads() {
-    pads = new Array(12).fill(null);
-    $$('.pad').forEach(p => {
-        p.classList.remove('active');
-        p.querySelector('.pad-time').textContent = '';
-    });
-}
+function clearAllPads() { pads.fill(null); $$('.pad').forEach(p => { p.classList.remove('active'); p.querySelector('.pad-time').textContent = ''; }); }
 
 $$('.pad').forEach(padEl => {
     const idx = parseInt(padEl.dataset.pad);
-    padEl.addEventListener('click', (e) => {
-        if (e.altKey) { clearPad(idx); return; }
-        triggerPad(idx);
-    });
-    let pressTimer;
-    padEl.addEventListener('touchstart', () => {
-        pressTimer = setTimeout(() => clearPad(idx), 600);
-    }, { passive: true });
-    padEl.addEventListener('touchmove', () => clearTimeout(pressTimer));
+    padEl.addEventListener('click', (e) => { if (e.altKey) clearPad(idx); else triggerPad(idx); });
+    let pt; padEl.addEventListener('touchstart', () => { pt = setTimeout(() => clearPad(idx), 600); }, { passive: true });
+    padEl.addEventListener('touchend', () => clearTimeout(pt)); padEl.addEventListener('touchmove', () => clearTimeout(pt));
 });
 
 // ==========================================
-// ★★★ SCREENSHOT ENGINE (DYNAMIC WRAP UPDATE) ★★★
+// SCREENSHOT ENGINE 
 // ==========================================
 async function doScreenshot() {
     const video = currentPlaylist[currentVideoIndex];
     if (!video) return;
     showToast('GENERATING SCREENSHOT...');
-
     try {
-        let channelName = "Unknown Channel";
-        let publishedAt = "Unknown Date";
-        let viewCount = "0";
-
+        let channelName = "Unknown Channel", publishedAt = "Unknown Date", viewCount = "0";
         const statsResp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${video.videoId}&key=${CONFIG.API_KEY}`);
         if (statsResp.ok) {
-            const statsData = await statsResp.json();
-            if (statsData.items && statsData.items.length > 0) {
-                const item = statsData.items[0];
-                channelName = item.snippet.channelTitle;
-                publishedAt = new Date(item.snippet.publishedAt).toLocaleDateString();
-                viewCount = formatViewCount(item.statistics.viewCount);
+            const items = (await statsResp.json()).items;
+            if (items && items.length > 0) {
+                channelName = items[0].snippet.channelTitle; publishedAt = new Date(items[0].snippet.publishedAt).toLocaleDateString(); viewCount = formatViewCount(items[0].statistics.viewCount);
             }
         }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = 1280;
-        canvas.height = 720;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#111111';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = `https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`;
+        const canvas = document.createElement('canvas'); canvas.width = 1280; canvas.height = 720;
+        const ctx = canvas.getContext('2d'); ctx.fillStyle = '#111'; ctx.fillRect(0, 0, 1280, 720);
         
+        const img = new Image(); img.crossOrigin = "anonymous"; img.src = `https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`;
         img.onload = () => drawAndSave(img);
-        img.onerror = () => {
-            const fallbackImg = new Image();
-            fallbackImg.crossOrigin = "anonymous";
-            fallbackImg.src = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
-            fallbackImg.onload = () => drawAndSave(fallbackImg);
-            fallbackImg.onerror = () => drawAndSave(null); 
-        };
+        img.onerror = () => { const fImg = new Image(); fImg.crossOrigin = "anonymous"; fImg.src = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`; fImg.onload = () => drawAndSave(fImg); fImg.onerror = () => drawAndSave(null); };
 
         function drawAndSave(loadedImg) {
             if (loadedImg) ctx.drawImage(loadedImg, 0, 0, 1280, 720);
-
-            const grad = ctx.createLinearGradient(0, 0, 0, 720);
-            grad.addColorStop(0, 'rgba(0,0,0,0.1)');
-            grad.addColorStop(0.5, 'rgba(0,0,0,0.6)');
-            grad.addColorStop(1, 'rgba(0,0,0,0.95)');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 1280, 720);
-
-            ctx.fillStyle = '#44cc44';
-            ctx.font = 'bold 30px "Courier New", monospace';
-            ctx.fillText('MPC 2000 CRATE DIGGING CENTER', 50, 60);
+            const grad = ctx.createLinearGradient(0, 0, 0, 720); grad.addColorStop(0, 'rgba(0,0,0,0.1)'); grad.addColorStop(0.5, 'rgba(0,0,0,0.6)'); grad.addColorStop(1, 'rgba(0,0,0,0.95)');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, 1280, 720);
+            ctx.fillStyle = '#44cc44'; ctx.font = 'bold 30px "Courier New", monospace'; ctx.fillText('MPC 2000 CRATE DIGGING CENTER', 50, 60);
 
             let rawTitle = video.title.replace(/\[.*?views\]/g, '').trim();
-
             ctx.font = 'bold 50px "Courier New", monospace';
-            let words = rawTitle.split(' ');
-            let lines = [];
-            let currentLine = '';
-            let maxWidth = 1180; 
-            
+            let words = rawTitle.split(' '), lines = [], currentLine = '';
             for(let n = 0; n < words.length; n++) {
                 let testLine = currentLine + words[n] + ' ';
-                let metrics = ctx.measureText(testLine);
-                if (metrics.width > maxWidth && n > 0) {
-                    lines.push(currentLine);
-                    currentLine = words[n] + ' ';
-                } else {
-                    currentLine = testLine;
-                }
+                if (ctx.measureText(testLine).width > 1180 && n > 0) { lines.push(currentLine); currentLine = words[n] + ' '; } else currentLine = testLine;
             }
             lines.push(currentLine);
 
-            ctx.font = '35px "Courier New", monospace';
-            ctx.fillStyle = '#cccccc';
-            ctx.fillText(`RELEASED: ${publishedAt}  |  VIEWS: ${viewCount}`, 50, 680);
-            ctx.fillText(`CHANNEL: ${channelName.toUpperCase()}`, 50, 630);
-
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 50px "Courier New", monospace';
+            ctx.font = '35px "Courier New", monospace'; ctx.fillStyle = '#ccc';
+            ctx.fillText(`RELEASED: ${publishedAt}  |  VIEWS: ${viewCount}`, 50, 680); ctx.fillText(`CHANNEL: ${channelName.toUpperCase()}`, 50, 630);
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 50px "Courier New", monospace';
             let titleY = 570 - ((lines.length - 1) * 55); 
-            for(let i=0; i<lines.length; i++) {
-                ctx.fillText(lines[i].trim(), 50, titleY + (i * 55));
-            }
+            for(let i=0; i<lines.length; i++) ctx.fillText(lines[i].trim(), 50, titleY + (i * 55));
 
             try {
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
                 const a = document.createElement('a');
-                let safeFilename = rawTitle.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, "-");
-                if (!safeFilename) safeFilename = "Crate-Dig-Sample";
-                a.href = dataUrl;
-                a.download = `${safeFilename}.jpg`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                flashKey('#btnF3');
-                showToast('SCREENSHOT SAVED');
-            } catch (err) {
-                console.error("Canvas error:", err);
-                showToast('CORS ERROR - CAPTURE FAILED');
-            }
+                a.href = canvas.toDataURL('image/jpeg', 0.9);
+                a.download = `${rawTitle.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, "-") || "Crate-Dig-Sample"}.jpg`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                flashKey('#btnF3'); showToast('SCREENSHOT SAVED');
+            } catch (err) { showToast('CORS ERROR'); }
         }
-    } catch(e) {
-        showToast('ERROR CAPTURING IMAGE');
-    }
+    } catch(e) { showToast('ERROR CAPTURING'); }
 }
-
-// ==========================================
-// SOFT KEYS 
-// ==========================================
-function doGenNewPlaylist() { switchToScreen1(); showToast('BACK TO CRATE DIGGING'); }
 
 $('#btnF1').addEventListener('click', doGenNewPlaylist);
 $('#btnF2').addEventListener('click', addToPlaylist);
@@ -706,55 +486,31 @@ $('#btnF4').addEventListener('click', likeVideo);
 // ==========================================
 // ★★★ KEYBOARD MAPPING ★★★
 // ==========================================
-const KEY_TO_PAD = {
-    'z': 0, 'x': 1, 'c': 2, 'a': 3, 's': 4, 'd': 5,
-    'q': 6, 'w': 7, 'e': 8, '1': 9, '2': 10, '3': 11,
-};
+const KEY_TO_PAD = { 'z': 0, 'x': 1, 'c': 2, 'a': 3, 's': 4, 'd': 5, 'q': 6, 'w': 7, 'e': 8, '1': 9, '2': 10, '3': 11 };
 const KEY_TO_SPEED = { 'm': 0.5, ',': 0.75, '.': 1.25, '/': 1.5 };
 
 document.addEventListener('keydown', (e) => {
     const tag = e.target.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-    if (saveModal.classList.contains('show')) return;
-
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || saveModal.classList.contains('show')) return;
     const key = e.key.toLowerCase();
 
-    if (KEY_TO_PAD.hasOwnProperty(key)) {
-        e.preventDefault();
-        const idx = KEY_TO_PAD[key];
-        triggerPad(idx);
-        const padEl = getPadEl(idx);
-        if (padEl) {
-            padEl.style.filter = 'brightness(1.3)';
-            setTimeout(() => { padEl.style.filter = ''; }, 100);
-        }
-        return;
-    }
-
-    if (KEY_TO_SPEED.hasOwnProperty(key)) {
-        e.preventDefault();
-        setSpeed(KEY_TO_SPEED[key]);
-        return;
-    }
-
+    if (KEY_TO_PAD.hasOwnProperty(key)) { e.preventDefault(); triggerPad(KEY_TO_PAD[key]); const p = getPadEl(KEY_TO_PAD[key]); if (p) { p.style.filter = 'brightness(1.3)'; setTimeout(() => { p.style.filter = ''; }, 100); } return; }
+    if (KEY_TO_SPEED.hasOwnProperty(key)) { e.preventDefault(); setSpeed(KEY_TO_SPEED[key]); return; }
     if (key === 'arrowleft') { e.preventDefault(); doLast(); return; }
     if (key === 'arrowright') { e.preventDefault(); doNext(); return; }
     if (key === ' ') { e.preventDefault(); doTogglePlayPause(); return; }
-
     if (key === '[') { e.preventDefault(); doSkip(-3); return; }
     if (key === ']') { e.preventDefault(); doSkip(3); return; }
-
     if (key === 'k') { e.preventDefault(); doGenNewPlaylist(); return; }
     if (key === 'l') { e.preventDefault(); addToPlaylist(); return; }
     if (key === ';') { e.preventDefault(); doScreenshot(); return; }
     if (key === "'") { e.preventDefault(); likeVideo(); return; }
-
     if (key === 'r') { e.preventDefault(); startRecording(); return; }
     if (key === 't') { e.preventDefault(); stopRecording(false); return; }
 });
 
 // ==========================================
-// AUDIO RECORDING & WAV LOGIC (Untouched)
+// AUDIO RECORDING & WAV LOGIC
 // ==========================================
 $('#btnRec').addEventListener('click', startRecording);
 $('#btnStopRec').addEventListener('click', () => stopRecording(false));
@@ -767,20 +523,15 @@ async function startRecording() {
             stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true, preferCurrentTab: true });
             stream.getVideoTracks().forEach(t => t.stop());
             if (stream.getAudioTracks().length === 0) throw new Error('No audio track');
-        } catch (displayErr) {
-            showToast('SHARE TAB AUDIO TO RECORD'); return;
-        }
+        } catch (displayErr) { showToast('SHARE TAB AUDIO TO RECORD'); return; }
 
         audioStream = stream; recordedChunks = [];
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
-        mediaRecorder = new MediaRecorder(stream, { mimeType });
-
+        mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm' });
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
         mediaRecorder.onstop = () => { if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; } };
 
         mediaRecorder.start(100); isRecording = true; recStartTime = Date.now();
-        $('#btnRec').classList.add('recording');
-        recStatus.textContent = '● REC 0:00'; recStatus.classList.add('active');
+        $('#btnRec').classList.add('recording'); recStatus.textContent = '● REC 0:00'; recStatus.classList.add('active');
 
         recTimerInterval = setInterval(() => {
             const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
@@ -801,8 +552,7 @@ function stopRecording(discard = false) {
     setTimeout(() => {
         if (recordedChunks.length === 0) { showToast('NO AUDIO CAPTURED'); return; }
         const duration = ((Date.now() - recStartTime) / 1000).toFixed(1);
-        const video = currentPlaylist[currentVideoIndex];
-        $('#sampleName').value = (video ? video.title.replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30) : 'sample') + '-chop';
+        $('#sampleName').value = (currentPlaylist[currentVideoIndex] ? currentPlaylist[currentVideoIndex].title.replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30) : 'sample') + '-chop';
         $('#modalInfo').textContent = `DURATION: ${duration}s`;
         saveModal.classList.add('show'); $('#sampleName').focus(); $('#sampleName').select();
     }, 300);
@@ -813,35 +563,28 @@ $('#modalSave').addEventListener('click', async () => {
     const filename = $('#sampleName').value.trim() || 'hakai-sample';
     saveModal.classList.remove('show'); showToast('CONVERTING TO WAV...');
     try {
-        const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-        const wavBlob = await convertToWav(blob);
+        const wavBlob = await convertToWav(new Blob(recordedChunks, { type: 'audio/webm' }));
         downloadBlob(wavBlob, filename + '.wav');
         recordedChunks = []; showToast(`SAVED: ${filename}.wav`);
     } catch (err) {
-        const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-        downloadBlob(blob, filename + '.webm'); recordedChunks = []; showToast(`SAVED: ${filename}.webm`);
+        downloadBlob(new Blob(recordedChunks, { type: 'audio/webm' }), filename + '.webm'); 
+        recordedChunks = []; showToast(`SAVED: ${filename}.webm`);
     }
 });
-$('#sampleName').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); $('#modalSave').click(); }
-    if (e.key === 'Escape') { e.preventDefault(); $('#modalCancel').click(); }
-});
+$('#sampleName').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#modalSave').click(); } if (e.key === 'Escape') { e.preventDefault(); $('#modalCancel').click(); } });
 
 function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob); const a = document.createElement('a');
-    a.href = url; a.download = filename; document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(url);
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 async function convertToWav(webmBlob) {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const arrayBuffer = await webmBlob.arrayBuffer();
-    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-    const numChannels = audioBuffer.numberOfChannels; const sampleRate = audioBuffer.sampleRate; const length = audioBuffer.length;
-    const interleaved = new Float32Array(length * numChannels);
-    for (let ch = 0; ch < numChannels; ch++) {
+    const audioBuffer = await ctx.decodeAudioData(await webmBlob.arrayBuffer());
+    const interleaved = new Float32Array(audioBuffer.length * audioBuffer.numberOfChannels);
+    for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
         const channelData = audioBuffer.getChannelData(ch);
-        for (let i = 0; i < length; i++) interleaved[i * numChannels + ch] = channelData[i];
+        for (let i = 0; i < audioBuffer.length; i++) interleaved[i * audioBuffer.numberOfChannels + ch] = channelData[i];
     }
     const pcm = new Int16Array(interleaved.length);
     for (let i = 0; i < interleaved.length; i++) {
@@ -849,25 +592,15 @@ async function convertToWav(webmBlob) {
         pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
     }
     const wavBuffer = new ArrayBuffer(44 + pcm.length * 2); const view = new DataView(wavBuffer);
-    writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + pcm.length * 2, true);
-    writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt ');
-    view.setUint32(16, 16, true); view.setUint16(20, 1, true);
-    view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * numChannels * 2, true); view.setUint16(32, numChannels * 2, true);
-    view.setUint16(34, 16, true); writeString(view, 36, 'data'); view.setUint32(40, pcm.length * 2, true);
-    const offset = 44; for (let i = 0; i < pcm.length; i++) view.setInt16(offset + i * 2, pcm[i], true);
+    writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + pcm.length * 2, true); writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, audioBuffer.numberOfChannels, true); view.setUint32(24, audioBuffer.sampleRate, true);
+    view.setUint32(28, audioBuffer.sampleRate * audioBuffer.numberOfChannels * 2, true); view.setUint16(32, audioBuffer.numberOfChannels * 2, true); view.setUint16(34, 16, true);
+    writeString(view, 36, 'data'); view.setUint32(40, pcm.length * 2, true);
+    for (let i = 0; i < pcm.length; i++) view.setInt16(44 + i * 2, pcm[i], true);
     ctx.close(); return new Blob([wavBuffer], { type: 'audio/wav' });
 }
 function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); }
-
-function formatTime(seconds) {
-    const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60); const ms = Math.floor((seconds % 1) * 100);
-    return `${m}:${String(s).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
-}
-let toastTimeout;
-function showToast(msg) {
-    const toast = $('#toast'); toast.textContent = msg; toast.classList.add('show');
-    clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800);
-}
+function formatTime(seconds) { return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}.${String(Math.floor((seconds % 1) * 100)).padStart(2, '0')}`; }
+let toastTimeout; function showToast(msg) { const toast = $('#toast'); toast.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800); }
 document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v4.0');
+console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v4.1');

@@ -1,5 +1,5 @@
 /* ============================================
-   HAKAI MPC 2000 — STYLE.CSS (V4.0)
+   HAKAI MPC 2000 — STYLE.CSS (V4.1 - Desktop Pads Fix)
    Mobile stacked / Desktop horizontal grid
    ============================================ */
 
@@ -138,7 +138,6 @@ html, body {
 }
 #videoTitle { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 6px; }
 
-/* Soft keys directly handle F-key actions now */
 .soft-keys { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid #333; }
 .soft-key {
     background: transparent; border: none; border-right: 1px solid #333;
@@ -150,7 +149,17 @@ html, body {
 .soft-key:active { background: rgba(255,255,255,0.05); color: #fff; }
 .soft-key.flash { color: var(--pad-active); }
 
-/* Pad Grid */
+.fkey-row { display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; padding: 6px 9px; flex-shrink: 0; }
+.hw-btn-small {
+    width: 50px; height: 14px;
+    background: linear-gradient(180deg, #d4d0c8 0%, #b8b4ac 40%, #a8a49c 100%);
+    border-radius: 3px; border: none; cursor: pointer;
+    box-shadow: 0 2px 0 #706c64, 0 3px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4);
+    display: flex; align-items: center; justify-content: center;
+}
+.hw-btn-cap { width: 75%; height: 4px; background: linear-gradient(180deg, #3a3832, #1a1a18); border-radius: 1px; }
+.hw-btn-small:active { transform: translateY(1px); box-shadow: 0 1px 0 #706c64; }
+
 .pad-grid {
     display: grid; grid-template-columns: repeat(3, 1fr);
     gap: 5px; padding: 3px 6px; flex: 1; min-height: 0;
@@ -176,17 +185,6 @@ html, body {
 }
 .pad.active .pad-time { color: rgba(0,0,0,0.7); }
 
-/* HW Button style (Used for speed keys) */
-.hw-btn-small {
-    width: 50px; height: 14px;
-    background: linear-gradient(180deg, #d4d0c8 0%, #b8b4ac 40%, #a8a49c 100%);
-    border-radius: 3px; border: none; cursor: pointer;
-    box-shadow: 0 2px 0 #706c64, 0 3px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4);
-    display: flex; align-items: center; justify-content: center;
-}
-.hw-btn-cap { width: 75%; height: 4px; background: linear-gradient(180deg, #3a3832, #1a1a18); border-radius: 1px; }
-.hw-btn-small:active { transform: translateY(1px); box-shadow: 0 1px 0 #706c64; }
-
 .speed-row { display: flex; justify-content: space-around; padding: 10px 16px 2px; flex-shrink: 0; }
 .speed-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .speed-label { font-size: 10px; font-weight: 700; color: var(--text-white); letter-spacing: 0.5px; }
@@ -194,7 +192,6 @@ html, body {
 .speed-btn.active-speed { background: linear-gradient(180deg, #e8c8a8 0%, #d4a878 40%, #c09060 100%); }
 .speed-btn.active-speed .hw-btn-cap { background: linear-gradient(180deg, #5a3020, #3a1a10); }
 
-/* Transport Grid */
 .transport-grid {
     display: grid; grid-template-columns: repeat(4, 1fr);
     gap: 6px 8px; padding: 4px 12px 2px; flex-shrink: 0;
@@ -220,7 +217,6 @@ html, body {
 }
 .t-btn.silver:active { box-shadow: 0 1px 0 #6a6864; }
 
-/* Active Drum Break State */
 .t-btn.break-btn.active {
     background: linear-gradient(145deg, #a8a49e 0%, #989490 30%, #888480 70%, #787470 100%);
     box-shadow: 0 1px 0 #6a6864, inset 0 2px 4px rgba(0,0,0,0.5);
@@ -250,7 +246,6 @@ html, body {
 .rec-status.active { animation: rec-text-blink 0.8s infinite; }
 @keyframes rec-text-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-/* ========== TOAST ========== */
 .toast {
     position: fixed; bottom: 20px; left: 50%;
     transform: translateX(-50%) translateY(80px);
@@ -261,7 +256,6 @@ html, body {
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
-/* ========== SAVE MODAL ========== */
 .modal-overlay {
     display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
@@ -305,10 +299,10 @@ html, body {
     .screen1-container { padding-top: 80px; }
     
     .screen2-container {
-        max-width: 950px; /* Increased to account for dual columns */
+        max-width: 950px; 
         padding-top: 40px;
         display: grid;
-        grid-template-columns: 1.15fr 1fr; /* Screen slightly wider than pads */
+        grid-template-columns: 1.15fr 1fr; 
         grid-template-areas:
             "header    header"
             "screen    pads"
@@ -320,22 +314,30 @@ html, body {
         height: auto;
     }
 
-    /* Assigning the HTML elements to the Grid slots */
     .header-bar     { grid-area: header; margin-bottom: 20px; }
     .bezel          { grid-area: screen; margin-top: 0; align-self: start; }
-    .pad-grid       { grid-area: pads; }
+    .pad-grid       { grid-area: pads; gap: 12px; } /* Thicker spacing */
     .speed-row      { grid-area: speed; padding-top: 10px; }
     .transport-grid { grid-area: transport; }
     .rec-status-bar { grid-area: recstat; }
 
-    /* Scaling up hardware elements for desktop feel */
-    .pad { min-height: 90px; }
+    /* The "Unsquish" Perfect Square Pad Fix */
+    .pad { 
+        min-height: unset; /* Remove the mobile vertical stretch */
+        height: auto;      /* Let width dictate the size */
+        aspect-ratio: 1 / 1; /* FORCE PERFECT SQUARE */
+        border-radius: 8px;  /* Softer, more hardware-like edges */
+        box-shadow: 0 4px 0 #8a8680, 0 6px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
+    }
+    .pad:active { transform: translateY(3px); box-shadow: 0 1px 0 #8a8680, 0 2px 4px rgba(0,0,0,0.2); }
+    .pad.active { box-shadow: 0 4px 0 #1a6618, 0 6px 8px rgba(0,0,0,0.4), 0 0 12px rgba(68,204,68,0.4), inset 0 1px 0 rgba(255,255,255,0.3); }
+    .pad.active:active { transform: translateY(3px); box-shadow: 0 1px 0 #1a6618; }
+    
     .pad-label { font-size: 11px; margin-bottom: 4px; }
     .t-btn { height: 42px; }
     .t-label { font-size: 9px; margin-bottom: 4px; }
     .speed-label { font-size: 12px; margin-bottom: 4px; }
     
-    /* Make the text clearer on larger screens */
     .header-text { font-size: 14px; }
     .display-top-label { font-size: 10px; }
     .video-info { font-size: 10px; padding: 4px 10px; }
