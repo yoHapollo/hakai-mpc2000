@@ -1,7 +1,8 @@
 /* ============================================
-   HAKAI MPC 2000 — APP.JS (V4.1)
+   HAKAI MPC 2000 — APP.JS (V4.3 - Cooldown Fix)
    YouTube OAuth + Randomized Crate Digging
-   + Web Audio API Gapless Drum Loop Engine
+   + Gapless Drum Loop Engine + Canvas Screenshot
+   + Ghost Click / Pad Cooldown Lock
    ============================================ */
 
 const CONFIG = {
@@ -16,6 +17,7 @@ const CONFIG = {
 let currentPlaylist = [];
 let currentVideoIndex = 0;
 let pads = new Array(12).fill(null);
+let padClearTimes = new Array(12).fill(0); // <-- NEW: Hardware Cooldown Lock
 let player = null;
 let playerReady = false;
 let currentSpeed = 1.0;
@@ -66,7 +68,6 @@ let breakSource = null;
 let activeBreak = null;
 let breakAudioCtx = null;
 
-// Fetches the MP3s and decodes them straight into RAM for zero-latency loops
 async function loadBreaks() {
     breakAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
     for (let key in breakUrls) {
@@ -85,17 +86,14 @@ $$('.break-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
         const breakId = btn.dataset.break;
 
-        // Initialize audio engine on first click
         if (!breakAudioCtx) {
             showToast('LOADING DRUMS...');
             await loadBreaks();
         }
-        // Unlock browser audio state if blocked
         if (breakAudioCtx.state === 'suspended') {
             await breakAudioCtx.resume();
         }
 
-        // Toggle logic
         if (activeBreak === breakId) {
             if (breakSource) { 
                 breakSource.stop(); 
@@ -106,7 +104,6 @@ $$('.break-btn').forEach(btn => {
             activeBreak = null;
             showToast(`BREAK ${breakId} STOPPED`);
         } else {
-            // Stop any currently playing breaks first
             if (breakSource) { 
                 breakSource.stop(); 
                 breakSource.disconnect(); 
@@ -116,11 +113,10 @@ $$('.break-btn').forEach(btn => {
                 if (prevBtn) prevBtn.classList.remove('active');
             }
 
-            // Fire new break
             if (breakBuffers[breakId]) {
                 breakSource = breakAudioCtx.createBufferSource();
                 breakSource.buffer = breakBuffers[breakId];
-                breakSource.loop = true; // The magic gapless loop line
+                breakSource.loop = true; 
                 breakSource.connect(breakAudioCtx.destination);
                 breakSource.start();
 
@@ -393,34 +389,65 @@ $$('.speed-btn').forEach(btn => btn.addEventListener('click', () => setSpeed(par
 function updateSpeedUI() { $$('.speed-btn').forEach(b => b.classList.toggle('active-speed', parseFloat(b.dataset.speed) === currentSpeed && currentSpeed !== 1.0)); }
 
 // ==========================================
-// PAD SYSTEM
+// PAD SYSTEM (WITH COOLDOWN FIX)
 // ==========================================
 function getPadEl(idx) { return $(`.pad[data-pad="${idx}"]`); }
+
 function triggerPad(idx) {
     if (!playerReady) return;
+    
+    // --- THE COOLDOWN FIX ---
+    // If this pad was cleared within the last 500ms, ignore this click!
+    if (Date.now() - padClearTimes[idx] < 500) {
+        return; 
+    }
+
     const padEl = getPadEl(idx);
+    if (!padEl) return;
+
     if (pads[idx] === null) {
         pads[idx] = player.getCurrentTime();
-        padEl.classList.add('active'); padEl.querySelector('.pad-time').textContent = formatTime(pads[idx]);
+        padEl.classList.add('active'); 
+        padEl.querySelector('.pad-time').textContent = formatTime(pads[idx]);
         showToast(`PAD ${idx + 1} SET`);
     } else {
         player.seekTo(pads[idx], true); player.playVideo();
         padEl.style.filter = 'brightness(1.5)'; setTimeout(() => { padEl.style.filter = ''; }, 120);
     }
 }
+
 function clearPad(idx) {
     if (pads[idx] !== null) {
-        pads[idx] = null; getPadEl(idx).classList.remove('active'); getPadEl(idx).querySelector('.pad-time').textContent = '';
+        pads[idx] = null; 
+        const padEl = getPadEl(idx);
+        padEl.classList.remove('active'); 
+        padEl.querySelector('.pad-time').textContent = '';
+        
+        // Log the exact time the pad was cleared
+        padClearTimes[idx] = Date.now();
+        
         showToast(`PAD ${idx + 1} CLEARED`);
     }
 }
-function clearAllPads() { pads.fill(null); $$('.pad').forEach(p => { p.classList.remove('active'); p.querySelector('.pad-time').textContent = ''; }); }
+
+function clearAllPads() { 
+    pads.fill(null); 
+    $$('.pad').forEach(p => { p.classList.remove('active'); p.querySelector('.pad-time').textContent = ''; }); 
+}
 
 $$('.pad').forEach(padEl => {
     const idx = parseInt(padEl.dataset.pad);
     padEl.addEventListener('click', (e) => { if (e.altKey) clearPad(idx); else triggerPad(idx); });
-    let pt; padEl.addEventListener('touchstart', () => { pt = setTimeout(() => clearPad(idx), 600); }, { passive: true });
-    padEl.addEventListener('touchend', () => clearTimeout(pt)); padEl.addEventListener('touchmove', () => clearTimeout(pt));
+    
+    let pt; 
+    padEl.addEventListener('touchstart', () => { 
+        pt = setTimeout(() => clearPad(idx), 600); 
+    }, { passive: true });
+    
+    // Restored touchend events so brief taps don't accidentally clear 600ms later
+    padEl.addEventListener('touchend', () => clearTimeout(pt)); 
+    padEl.addEventListener('touchcancel', () => clearTimeout(pt)); 
+    padEl.addEventListener('touchmove', () => clearTimeout(pt));
 });
 
 // ==========================================
@@ -603,4 +630,4 @@ function writeString(view, offset, string) { for (let i = 0; i < string.length; 
 function formatTime(seconds) { return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}.${String(Math.floor((seconds % 1) * 100)).padStart(2, '0')}`; }
 let toastTimeout; function showToast(msg) { const toast = $('#toast'); toast.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800); }
 document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v4.1');
+console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v4.3');
