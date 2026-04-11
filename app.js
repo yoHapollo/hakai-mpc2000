@@ -1,8 +1,8 @@
 /* ============================================
-   HAKAI MPC 2000 — APP.JS (V3.6 - Canvas Upgrades)
+   HAKAI MPC 2000 — APP.JS (V4.0)
    YouTube OAuth + Randomized Crate Digging
-   + Pad Chopping + Keyboard MPC + WAV Export
-   + Dynamic Canvas Wrap + Target Playlist
+   + Pad Chopping + Canvas Screenshot Engine
+   + Integrated Drum Break Loops
    ============================================ */
 
 // ==========================================
@@ -56,6 +56,50 @@ const authDot = $('#authDot');
 const headerAvatar = $('#headerAvatar');
 const recStatus = $('#recStatus');
 const saveModal = $('#saveModal');
+
+// ==========================================
+// DRUM BREAK ENGINE
+// ==========================================
+const breaks = {
+    1: new Audio('BREAK_1_97.mp3'),
+    2: new Audio('BREAK_2_80.mp3'),
+    3: new Audio('BREAK_3_70.mp3'),
+    4: new Audio('BREAK_4_87.mp3')
+};
+
+// Force perfect looping on all audio files
+Object.values(breaks).forEach(audio => audio.loop = true);
+
+let activeBreak = null;
+
+$$('.break-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const breakId = btn.dataset.break;
+
+        // If clicking the currently playing break, stop it completely
+        if (activeBreak === breakId) {
+            breaks[breakId].pause();
+            breaks[breakId].currentTime = 0;
+            btn.classList.remove('active');
+            activeBreak = null;
+            showToast(`BREAK ${breakId} STOPPED`);
+        } else {
+            // Stop any other currently playing break first
+            if (activeBreak) {
+                breaks[activeBreak].pause();
+                breaks[activeBreak].currentTime = 0;
+                const prevBtn = $(`.break-btn[data-break="${activeBreak}"]`);
+                if (prevBtn) prevBtn.classList.remove('active');
+            }
+            
+            // Play the newly selected break
+            breaks[breakId].play().catch(e => console.error("Audio playback failed:", e));
+            btn.classList.add('active');
+            activeBreak = breakId;
+            showToast(`PLAYING BREAK ${breakId}`);
+        }
+    });
+});
 
 // ==========================================
 // INIT: Year dropdowns
@@ -381,6 +425,16 @@ function switchToScreen2() {
 function switchToScreen1() {
     if (isRecording) stopRecording(true);
     if (player && playerReady) player.pauseVideo();
+    
+    // Stop breaks if we go back to screen 1
+    if (activeBreak) {
+        breaks[activeBreak].pause();
+        breaks[activeBreak].currentTime = 0;
+        const prevBtn = $(`.break-btn[data-break="${activeBreak}"]`);
+        if (prevBtn) prevBtn.classList.remove('active');
+        activeBreak = null;
+    }
+
     screen2.classList.remove('active');
     screen1.classList.add('active');
 }
@@ -585,10 +639,8 @@ async function doScreenshot() {
             ctx.font = 'bold 30px "Courier New", monospace';
             ctx.fillText('MPC 2000 CRATE DIGGING CENTER', 50, 60);
 
-            // Clean Title
             let rawTitle = video.title.replace(/\[.*?views\]/g, '').trim();
 
-            // Calculate Text Wrapping
             ctx.font = 'bold 50px "Courier New", monospace';
             let words = rawTitle.split(' ');
             let lines = [];
@@ -607,13 +659,11 @@ async function doScreenshot() {
             }
             lines.push(currentLine);
 
-            // Anchor Metadata to the bottom
             ctx.font = '35px "Courier New", monospace';
             ctx.fillStyle = '#cccccc';
             ctx.fillText(`RELEASED: ${publishedAt}  |  VIEWS: ${viewCount}`, 50, 680);
             ctx.fillText(`CHANNEL: ${channelName.toUpperCase()}`, 50, 630);
 
-            // Build Title upwards from the metadata
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 50px "Courier New", monospace';
             let titleY = 570 - ((lines.length - 1) * 55); 
@@ -624,11 +674,8 @@ async function doScreenshot() {
             try {
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
                 const a = document.createElement('a');
-                
-                // Clean Filename Generator
                 let safeFilename = rawTitle.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, "-");
                 if (!safeFilename) safeFilename = "Crate-Dig-Sample";
-                
                 a.href = dataUrl;
                 a.download = `${safeFilename}.jpg`;
                 document.body.appendChild(a);
@@ -647,7 +694,7 @@ async function doScreenshot() {
 }
 
 // ==========================================
-// SOFT KEYS & HARDWARE BUTTON WIRING
+// SOFT KEYS 
 // ==========================================
 function doGenNewPlaylist() { switchToScreen1(); showToast('BACK TO CRATE DIGGING'); }
 
@@ -655,12 +702,6 @@ $('#btnF1').addEventListener('click', doGenNewPlaylist);
 $('#btnF2').addEventListener('click', addToPlaylist);
 $('#btnF3').addEventListener('click', doScreenshot);
 $('#btnF4').addEventListener('click', likeVideo);
-
-const fkeyBtns = $$('.fkey-row .hw-btn-small');
-if(fkeyBtns[0]) fkeyBtns[0].addEventListener('click', () => $('#btnF1').click());
-if(fkeyBtns[1]) fkeyBtns[1].addEventListener('click', () => $('#btnF2').click());
-if(fkeyBtns[2]) fkeyBtns[2].addEventListener('click', () => $('#btnF3').click());
-if(fkeyBtns[3]) fkeyBtns[3].addEventListener('click', () => $('#btnF4').click());
 
 // ==========================================
 // ★★★ KEYBOARD MAPPING ★★★
@@ -829,4 +870,4 @@ function showToast(msg) {
     clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800);
 }
 document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v3.6');
+console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v4.0');
