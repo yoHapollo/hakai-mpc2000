@@ -4,8 +4,11 @@
    + Ghost Click Lock + Mobile Transport Mappings
    ============================================ */
 
+// ⚠️ WARNING: API key exposed in client-side code!
+// For production, move this to a backend proxy to keep it secure.
+// See API_KEY_FIX.md for instructions.
 const CONFIG = {
-    API_KEY: 'AIzaSyDaHVAAXKFjOiXc7pw9exh92MJYXIQ4Kvg',
+    API_KEY: 'AIzaSyAhYhsr-kYUukMZFNAgV6jDg1FGi065wT4', // ⚠️ REPLACE THIS - Currently returning 403
     CLIENT_ID: '564150027983-aero1s5g4ctnm5iihv3c1un23rc2mnk5.apps.googleusercontent.com',
     SCOPES: 'https://www.googleapis.com/auth/youtube',
 };
@@ -651,6 +654,32 @@ async function convertToWav(webmBlob) {
 }
 function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); }
 function formatTime(seconds) { return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}.${String(Math.floor((seconds % 1) * 100)).padStart(2, '0')}`; }
-let toastTimeout; function showToast(msg) { const toast = $('#toast'); toast.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800); }
+
+// ==========================================
+// UTILITY FUNCTIONS
+// ==========================================
+let toastTimeout;
+function showToast(msg) { 
+    const toast = $('#toast'); 
+    toast.textContent = msg; 
+    toast.classList.add('show'); 
+    clearTimeout(toastTimeout); 
+    toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800); 
+}
+
+function flashKey(selector) {
+    const el = $(selector);
+    if (!el) return;
+    el.style.filter = 'brightness(1.5)';
+    setTimeout(() => { el.style.filter = ''; }, 200);
+}
+
+function doGenNewPlaylist() {
+    if (confirm('Generate a new playlist? Current playlist will be lost.')) {
+        switchToScreen1();
+        showToast('RETURNING TO SEARCH');
+    }
+}
+
 document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v4.4');
+console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v4.5');
