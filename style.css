@@ -3,7 +3,7 @@
    Mobile 9-Pad Vertical / Desktop 12-Pad Horizontal
    ============================================ */
 
-   :root {
+:root {
     --bg: #000;
     --red: #D32F2F;
     --pad-active: #44cc44;
@@ -76,9 +76,16 @@ html, body {
 .soft-key:active { background: #222; color: #fff; }
 
 /* Pads */
-.pad-cell { display: flex; flex-direction: column; align-items: flex-start; height: 100%; min-height: 0; }
-.pad-label { font-family: var(--font-label); font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--text-white); margin-bottom: 4px; }
-.pad { width: 100%; height: 100%; max-height: 85px; border: none; border-radius: 4px; cursor: pointer; position: relative; background: #c2c2c2; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.2), inset 2px 2px 4px rgba(255,255,255,0.6), 0 5px 0 #777, 0 6px 6px rgba(0,0,0,0.5); transition: all 0.08s; }
+.pad-cell { display: flex; flex-direction: column; align-items: stretch; }
+.pad-label { font-family: var(--font-label); font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--text-white); margin-bottom: 4px; text-shadow: 1px 1px 0 #000; }
+.pad { 
+    width: 100%; 
+    aspect-ratio: 1.35; /* This locks in the classic MPC rectangle shape */
+    height: auto; 
+    border: none; border-radius: 4px; cursor: pointer; position: relative; background: #c2c2c2; 
+    box-shadow: inset -1px -1px 3px rgba(0,0,0,0.2), inset 2px 2px 4px rgba(255,255,255,0.6), 0 5px 0 #777, 0 6px 6px rgba(0,0,0,0.5); 
+    transition: all 0.08s; 
+}
 .pad:active { transform: translateY(4px); box-shadow: inset -1px -1px 3px rgba(0,0,0,0.2), inset 2px 2px 4px rgba(255,255,255,0.6), 0 1px 0 #777, 0 2px 3px rgba(0,0,0,0.4); }
 .pad.active { background: #44cc44; box-shadow: inset -1px -1px 3px rgba(0,0,0,0.2), inset 2px 2px 4px rgba(255,255,255,0.6), 0 5px 0 #1a6618, 0 6px 12px rgba(68,204,68,0.4); }
 .pad.active:active { transform: translateY(4px); box-shadow: inset -1px -1px 3px rgba(0,0,0,0.2), inset 2px 2px 4px rgba(255,255,255,0.6), 0 1px 0 #1a6618, 0 2px 3px rgba(68,204,68,0.4); }
@@ -86,7 +93,7 @@ html, body {
 /* Speed/Break Pills */
 .speed-row { display: flex; justify-content: space-between; padding: 0 15px; }
 .speed-cell { display: flex; flex-direction: column; align-items: center; }
-.speed-label { font-family: var(--font-label); font-size: 11px; font-weight: 800; color: var(--text-white); margin-bottom: 6px; letter-spacing: 0.5px; }
+.speed-label { font-family: var(--font-label); font-size: 11px; font-weight: 800; color: var(--text-white); margin-bottom: 4px; letter-spacing: 0.5px; }
 .speed-btn { width: 44px; height: 16px; border-radius: 3px; border: none; background: #d0ccc6; box-shadow: inset 1px 1px 2px rgba(255,255,255,0.6), 0 3px 0 #888, 0 4px 4px rgba(0,0,0,0.4); cursor: pointer; }
 .speed-btn:active { transform: translateY(2px); box-shadow: inset 1px 1px 2px rgba(255,255,255,0.6), 0 1px 0 #888; }
 .speed-btn.active-speed { background: #c09060; }
@@ -98,7 +105,7 @@ html, body {
 
 /* Transport Grid */
 .t-cell { display: flex; flex-direction: column; align-items: center; }
-.t-label { font-family: var(--font-label); font-size: 9px; font-weight: 800; color: var(--text-white); letter-spacing: 0.5px; margin-bottom: 6px; text-transform: uppercase; }
+.t-label { font-family: var(--font-label); font-size: 9px; font-weight: 800; color: var(--text-white); letter-spacing: 0.5px; margin-bottom: 4px; text-transform: uppercase; }
 .t-btn { width: 100%; max-width: 60px; height: 36px; border: none; border-radius: 3px; cursor: pointer; transition: transform 0.08s; box-shadow: inset 1px 1px 2px rgba(255,255,255,0.3), 0 4px 0 #111, 0 5px 6px rgba(0,0,0,0.5); }
 .t-btn:active { transform: translateY(3px); box-shadow: inset 1px 1px 2px rgba(255,255,255,0.3), 0 1px 0 #111, 0 2px 3px rgba(0,0,0,0.5); }
 
@@ -112,33 +119,45 @@ html, body {
 .dark-btn:active { box-shadow: inset 1px 1px 2px rgba(255,255,255,0.1), 0 1px 0 #1a1a1a; }
 
 /* ================================================
-   MOBILE LAYOUT (100dvh Lock to prevent scroll)
+   MOBILE LAYOUT (Distribute evenly, don't stretch)
    ================================================ */
 .screen2-container { 
     padding: max(env(safe-area-inset-top), 10px) 20px max(env(safe-area-inset-bottom), 15px); 
     margin: 0 auto; 
     max-width: 440px; 
-    height: 100dvh; /* Dynamic viewport bounds */
+    height: 100dvh; 
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: hidden; /* No scroll */
 }
-.layout-wrapper { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-.left-panel, .right-panel { display: contents; } /* Flatten DOM for seamless mobile flex ordering */
+.layout-wrapper { 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-evenly; /* Spreads UI groups evenly to fill height */
+    flex: 1; 
+    height: 100%; 
+}
+.left-panel, .right-panel { display: contents; } /* Flatten DOM */
 
 .area-screen { order: 1; flex-shrink: 0; }
+
 .area-pads { 
     order: 2; 
-    margin: 15px 0; 
     display: grid; 
     grid-template-columns: repeat(3, 1fr); 
-    grid-template-rows: repeat(3, 1fr);
-    gap: 10px 15px; 
-    flex: 1 1 auto; /* Allow pads to squish into the remaining space vertically */
-    min-height: 0;
+    gap: 12px 14px; 
+    /* Removed grid-template-rows so the aspect-ratio dictates the height */
 }
-.area-speed { order: 3; flex-shrink: 0; margin-bottom: 12px; }
-.area-trans { order: 4; flex-shrink: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 10px; }
+
+.area-speed { order: 3; flex-shrink: 0; }
+
+.area-trans { 
+    order: 4; 
+    flex-shrink: 0; 
+    display: grid; 
+    grid-template-columns: repeat(4, 1fr); 
+    gap: 12px 10px; 
+}
 
 /* ================================================
    DESKTOP LAYOUT (Flex Row Split - 800px+)
@@ -161,11 +180,12 @@ html, body {
 
     .area-screen, .area-pads, .area-speed, .area-trans { order: 0; margin: 0; }
     
-    .area-pads { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); gap: 20px 25px; height: 100%; align-content: space-between; flex: none; }
+    .area-pads { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); gap: 20px 25px; height: 100%; align-content: space-between; }
+    
     .area-trans { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 15px; }
 
     .pad-label { font-size: 14px; margin-bottom: 8px; }
-    .pad { max-height: none; border-radius: 6px; }
+    .pad { aspect-ratio: auto; height: 100%; border-radius: 6px; } /* Let grid row height handle it on desktop */
     
     .t-label { font-size: 11px; margin-bottom: 8px; }
     .t-btn { height: 44px; max-width: 70px; }
