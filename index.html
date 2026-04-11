@@ -134,15 +134,18 @@
             </div>
 
             <div class="pad-grid">
-                <div class="pad-cell"><span class="pad-label">PAD 10</span><button class="pad" data-pad="9"><span class="pad-time"></span></button></div>
-                <div class="pad-cell"><span class="pad-label">PAD 11</span><button class="pad" data-pad="10"><span class="pad-time"></span></button></div>
-                <div class="pad-cell"><span class="pad-label">PAD 12</span><button class="pad" data-pad="11"><span class="pad-time"></span></button></div>
+                <div class="pad-cell desktop-only"><span class="pad-label">PAD 10</span><button class="pad" data-pad="9"><span class="pad-time"></span></button></div>
+                <div class="pad-cell desktop-only"><span class="pad-label">PAD 11</span><button class="pad" data-pad="10"><span class="pad-time"></span></button></div>
+                <div class="pad-cell desktop-only"><span class="pad-label">PAD 12</span><button class="pad" data-pad="11"><span class="pad-time"></span></button></div>
+                
                 <div class="pad-cell"><span class="pad-label">PAD 7</span><button class="pad" data-pad="6"><span class="pad-time"></span></button></div>
                 <div class="pad-cell"><span class="pad-label">PAD 8</span><button class="pad" data-pad="7"><span class="pad-time"></span></button></div>
                 <div class="pad-cell"><span class="pad-label">PAD 9</span><button class="pad" data-pad="8"><span class="pad-time"></span></button></div>
+                
                 <div class="pad-cell"><span class="pad-label">PAD 4</span><button class="pad" data-pad="3"><span class="pad-time"></span></button></div>
                 <div class="pad-cell"><span class="pad-label">PAD 5</span><button class="pad" data-pad="4"><span class="pad-time"></span></button></div>
                 <div class="pad-cell"><span class="pad-label">PAD 6</span><button class="pad" data-pad="5"><span class="pad-time"></span></button></div>
+                
                 <div class="pad-cell"><span class="pad-label">PAD 1</span><button class="pad" data-pad="0"><span class="pad-time"></span></button></div>
                 <div class="pad-cell"><span class="pad-label">PAD 2</span><button class="pad" data-pad="1"><span class="pad-time"></span></button></div>
                 <div class="pad-cell"><span class="pad-label">PAD 3</span><button class="pad" data-pad="2"><span class="pad-time"></span></button></div>
@@ -156,14 +159,25 @@
             </div>
 
             <div class="transport-grid">
-                <div class="t-cell">
+                
+                <div class="t-cell mobile-only">
+                    <span class="t-label">ADD TO LIST</span>
+                    <button class="t-btn silver" id="btnMobAdd"></button>
+                </div>
+                <div class="t-cell mobile-only">
+                    <span class="t-label">SCREEN SHOT</span>
+                    <button class="t-btn silver" id="btnMobShot"></button>
+                </div>
+
+                <div class="t-cell desktop-only">
                     <span class="t-label">REC</span>
                     <button class="t-btn red" id="btnRec"><div class="rec-dot"></div></button>
                 </div>
-                <div class="t-cell">
+                <div class="t-cell desktop-only">
                     <span class="t-label">STOP REC</span>
                     <button class="t-btn white" id="btnStopRec"><div class="rec-square"></div></button>
                 </div>
+
                 <div class="t-cell"><span class="t-label">-3 SEC</span><button class="t-btn silver" id="btnSkipBack"></button></div>
                 <div class="t-cell"><span class="t-label">+3 SEC</span><button class="t-btn silver" id="btnSkipFwd"></button></div>
 
@@ -178,7 +192,7 @@
                 <div class="t-cell"><span class="t-label">BREAK 4 - 87BPM</span><button class="t-btn silver break-btn" data-break="4"></button></div>
             </div>
 
-            <div class="rec-status-bar">
+            <div class="rec-status-bar desktop-only">
                 <div class="rec-status" id="recStatus"></div>
             </div>
         </div>

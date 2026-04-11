@@ -1,8 +1,7 @@
 /* ============================================
-   HAKAI MPC 2000 — APP.JS (V4.3 - Cooldown Fix)
-   YouTube OAuth + Randomized Crate Digging
-   + Gapless Drum Loop Engine + Canvas Screenshot
-   + Ghost Click / Pad Cooldown Lock
+   HAKAI MPC 2000 — APP.JS (V4.4 - Mobile Logic Fix)
+   YouTube OAuth + Gapless Drum Loop Engine 
+   + Ghost Click Lock + Mobile Transport Mappings
    ============================================ */
 
 const CONFIG = {
@@ -11,13 +10,10 @@ const CONFIG = {
     SCOPES: 'https://www.googleapis.com/auth/youtube',
 };
 
-// ==========================================
-// GLOBAL STATE
-// ==========================================
 let currentPlaylist = [];
 let currentVideoIndex = 0;
 let pads = new Array(12).fill(null);
-let padClearTimes = new Array(12).fill(0); // <-- NEW: Hardware Cooldown Lock
+let padClearTimes = new Array(12).fill(0);
 let player = null;
 let playerReady = false;
 let currentSpeed = 1.0;
@@ -32,9 +28,6 @@ let isRecording = false;
 let recStartTime = 0;
 let recTimerInterval = null;
 
-// ==========================================
-// DOM REFS
-// ==========================================
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
@@ -54,7 +47,7 @@ const recStatus = $('#recStatus');
 const saveModal = $('#saveModal');
 
 // ==========================================
-// DRUM BREAK ENGINE (Web Audio API - Gapless)
+// DRUM BREAK ENGINE
 // ==========================================
 const breakUrls = {
     1: 'BREAK_1_97.mp3',
@@ -90,24 +83,15 @@ $$('.break-btn').forEach(btn => {
             showToast('LOADING DRUMS...');
             await loadBreaks();
         }
-        if (breakAudioCtx.state === 'suspended') {
-            await breakAudioCtx.resume();
-        }
+        if (breakAudioCtx.state === 'suspended') await breakAudioCtx.resume();
 
         if (activeBreak === breakId) {
-            if (breakSource) { 
-                breakSource.stop(); 
-                breakSource.disconnect(); 
-                breakSource = null; 
-            }
+            if (breakSource) { breakSource.stop(); breakSource.disconnect(); breakSource = null; }
             btn.classList.remove('active');
             activeBreak = null;
             showToast(`BREAK ${breakId} STOPPED`);
         } else {
-            if (breakSource) { 
-                breakSource.stop(); 
-                breakSource.disconnect(); 
-            }
+            if (breakSource) { breakSource.stop(); breakSource.disconnect(); }
             if (activeBreak) {
                 const prevBtn = $(`.break-btn[data-break="${activeBreak}"]`);
                 if (prevBtn) prevBtn.classList.remove('active');
@@ -131,7 +115,7 @@ $$('.break-btn').forEach(btn => {
 });
 
 // ==========================================
-// INIT: Year dropdowns
+// INIT
 // ==========================================
 (function initYears() {
     const now = new Date().getFullYear();
@@ -143,9 +127,6 @@ $$('.break-btn').forEach(btn => {
     yearEndSel.value = '1985';
 })();
 
-// ==========================================
-// GOOGLE OAUTH 2.0
-// ==========================================
 function initGoogleAuth() {
     if (typeof google === 'undefined' || !google.accounts) return;
     tokenClient = google.accounts.oauth2.initTokenClient({
@@ -206,12 +187,8 @@ authBtn.addEventListener('click', () => {
     tokenClient.requestAccessToken();
 });
 
-// ==========================================
-// YOUTUBE IFRAME API
-// ==========================================
 function onYouTubeIframeAPIReady() {
-    initGoogleAuth();
-    checkExistingLogin(); 
+    initGoogleAuth(); checkExistingLogin(); 
 }
 
 function initPlayer(videoId) {
@@ -230,7 +207,7 @@ function parseISO8601Duration(duration) {
 }
 
 // ==========================================
-// RANDOMIZED SEARCH SYSTEM
+// SEARCH ENGINE
 // ==========================================
 const QUERY_SUFFIXES = ['vinyl', 'original', 'rare', 'album track', 'audio', 'HQ', 'remastered', 'single', 'official audio', 'deep cut', 'B side', 'obscure', 'forgotten', 'classic', 'groove', 'original mix', 'studio', 'LP', 'full album', 'underground', 'lost', '45 rpm', 'compilation'];
 
@@ -298,7 +275,7 @@ async function searchYouTubeRandomized(keywords, yearStart, yearEnd, maxViews, l
 function formatViewCount(n) { return n >= 1000000 ? (n / 1000000).toFixed(1) + 'M' : n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n); }
 
 // ==========================================
-// YOUTUBE AUTHENTICATED ACTIONS
+// YT API
 // ==========================================
 async function ytApi(endpoint, method = 'GET', body = null) {
     const opts = { method, headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } };
@@ -327,7 +304,7 @@ async function likeVideo() {
 }
 
 // ==========================================
-// SCREEN TRANSITIONS
+// SCREEN 2 CONTROLS
 // ==========================================
 function switchToScreen2() {
     screen1.classList.remove('active'); screen2.classList.add('active');
@@ -350,9 +327,6 @@ function loadCurrentVideo() {
     if (!player) initPlayer(video.videoId); else if (playerReady) player.loadVideoById(video.videoId); 
 }
 
-// ==========================================
-// TRANSPORT CONTROLS & SKIP
-// ==========================================
 function doPlay() { if (playerReady) { player.playVideo(); showToast('▶ PLAY'); } }
 function doStop() { if (playerReady) { player.pauseVideo(); showToast('■ STOP'); } }
 function doTogglePlayPause() { if (playerReady) player.getPlayerState() === YT.PlayerState.PLAYING ? doStop() : doPlay(); }
@@ -377,9 +351,6 @@ $('#btnPlay').addEventListener('click', doPlay); $('#btnStop').addEventListener(
 $('#btnNext').addEventListener('click', doNext); $('#btnLast').addEventListener('click', doLast);
 $('#btnSkipBack').addEventListener('click', () => doSkip(-3)); $('#btnSkipFwd').addEventListener('click', () => doSkip(3));
 
-// ==========================================
-// SPEED CONTROLS
-// ==========================================
 function setSpeed(targetSpeed) {
     currentSpeed = currentSpeed === targetSpeed ? 1.0 : targetSpeed;
     if (playerReady) player.setPlaybackRate(currentSpeed);
@@ -389,26 +360,20 @@ $$('.speed-btn').forEach(btn => btn.addEventListener('click', () => setSpeed(par
 function updateSpeedUI() { $$('.speed-btn').forEach(b => b.classList.toggle('active-speed', parseFloat(b.dataset.speed) === currentSpeed && currentSpeed !== 1.0)); }
 
 // ==========================================
-// PAD SYSTEM (WITH COOLDOWN FIX)
+// PADS
 // ==========================================
 function getPadEl(idx) { return $(`.pad[data-pad="${idx}"]`); }
 
 function triggerPad(idx) {
     if (!playerReady) return;
-    
-    // --- THE COOLDOWN FIX ---
-    // If this pad was cleared within the last 500ms, ignore this click!
-    if (Date.now() - padClearTimes[idx] < 500) {
-        return; 
-    }
+    if (Date.now() - padClearTimes[idx] < 500) return; 
 
     const padEl = getPadEl(idx);
     if (!padEl) return;
 
     if (pads[idx] === null) {
         pads[idx] = player.getCurrentTime();
-        padEl.classList.add('active'); 
-        padEl.querySelector('.pad-time').textContent = formatTime(pads[idx]);
+        padEl.classList.add('active'); padEl.querySelector('.pad-time').textContent = formatTime(pads[idx]);
         showToast(`PAD ${idx + 1} SET`);
     } else {
         player.seekTo(pads[idx], true); player.playVideo();
@@ -418,37 +383,32 @@ function triggerPad(idx) {
 
 function clearPad(idx) {
     if (pads[idx] !== null) {
-        pads[idx] = null; 
-        const padEl = getPadEl(idx);
-        padEl.classList.remove('active'); 
-        padEl.querySelector('.pad-time').textContent = '';
-        
-        // Log the exact time the pad was cleared
+        pads[idx] = null; getPadEl(idx).classList.remove('active'); getPadEl(idx).querySelector('.pad-time').textContent = '';
         padClearTimes[idx] = Date.now();
-        
         showToast(`PAD ${idx + 1} CLEARED`);
     }
 }
-
-function clearAllPads() { 
-    pads.fill(null); 
-    $$('.pad').forEach(p => { p.classList.remove('active'); p.querySelector('.pad-time').textContent = ''; }); 
-}
+function clearAllPads() { pads.fill(null); $$('.pad').forEach(p => { p.classList.remove('active'); p.querySelector('.pad-time').textContent = ''; }); }
 
 $$('.pad').forEach(padEl => {
     const idx = parseInt(padEl.dataset.pad);
     padEl.addEventListener('click', (e) => { if (e.altKey) clearPad(idx); else triggerPad(idx); });
-    
-    let pt; 
-    padEl.addEventListener('touchstart', () => { 
-        pt = setTimeout(() => clearPad(idx), 600); 
-    }, { passive: true });
-    
-    // Restored touchend events so brief taps don't accidentally clear 600ms later
-    padEl.addEventListener('touchend', () => clearTimeout(pt)); 
-    padEl.addEventListener('touchcancel', () => clearTimeout(pt)); 
-    padEl.addEventListener('touchmove', () => clearTimeout(pt));
+    let pt; padEl.addEventListener('touchstart', () => { pt = setTimeout(() => clearPad(idx), 600); }, { passive: true });
+    padEl.addEventListener('touchend', () => clearTimeout(pt)); padEl.addEventListener('touchcancel', () => clearTimeout(pt)); padEl.addEventListener('touchmove', () => clearTimeout(pt));
 });
+
+// ==========================================
+// F-KEYS / NEW MOBILE BUTTONS MAPPING
+// ==========================================
+$('#btnF1')?.addEventListener('click', doGenNewPlaylist);
+$('#btnF2')?.addEventListener('click', addToPlaylist);
+$('#btnF3')?.addEventListener('click', doScreenshot);
+$('#btnF4')?.addEventListener('click', likeVideo);
+
+// Bind the new mobile transport buttons to the exact same functions
+$('#btnMobAdd')?.addEventListener('click', addToPlaylist);
+$('#btnMobShot')?.addEventListener('click', doScreenshot);
+
 
 // ==========================================
 // SCREENSHOT ENGINE 
@@ -505,13 +465,8 @@ async function doScreenshot() {
     } catch(e) { showToast('ERROR CAPTURING'); }
 }
 
-$('#btnF1').addEventListener('click', doGenNewPlaylist);
-$('#btnF2').addEventListener('click', addToPlaylist);
-$('#btnF3').addEventListener('click', doScreenshot);
-$('#btnF4').addEventListener('click', likeVideo);
-
 // ==========================================
-// ★★★ KEYBOARD MAPPING ★★★
+// RECORDING & HOTKEYS
 // ==========================================
 const KEY_TO_PAD = { 'z': 0, 'x': 1, 'c': 2, 'a': 3, 's': 4, 'd': 5, 'q': 6, 'w': 7, 'e': 8, '1': 9, '2': 10, '3': 11 };
 const KEY_TO_SPEED = { 'm': 0.5, ',': 0.75, '.': 1.25, '/': 1.5 };
@@ -536,11 +491,8 @@ document.addEventListener('keydown', (e) => {
     if (key === 't') { e.preventDefault(); stopRecording(false); return; }
 });
 
-// ==========================================
-// AUDIO RECORDING & WAV LOGIC
-// ==========================================
-$('#btnRec').addEventListener('click', startRecording);
-$('#btnStopRec').addEventListener('click', () => stopRecording(false));
+$('#btnRec')?.addEventListener('click', startRecording);
+$('#btnStopRec')?.addEventListener('click', () => stopRecording(false));
 
 async function startRecording() {
     if (isRecording) return;
@@ -630,4 +582,4 @@ function writeString(view, offset, string) { for (let i = 0; i < string.length; 
 function formatTime(seconds) { return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}.${String(Math.floor((seconds % 1) * 100)).padStart(2, '0')}`; }
 let toastTimeout; function showToast(msg) { const toast = $('#toast'); toast.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800); }
 document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v4.3');
+console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v4.4');

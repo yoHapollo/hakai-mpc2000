@@ -1,6 +1,6 @@
 /* ============================================
-   HAKAI MPC 2000 — STYLE.CSS (V4.2 - Massive Desktop Sizing)
-   Mobile stacked / Desktop horizontal grid
+   HAKAI MPC 2000 — STYLE.CSS (V4.4)
+   Mobile 9-Pad / Desktop 12-Pad
    ============================================ */
 
 :root {
@@ -39,6 +39,10 @@ html, body {
 .screen.active { display: flex; }
 .screen::-webkit-scrollbar { display: none; }
 .screen { scrollbar-width: none; }
+
+/* Responsive Display Classes */
+.desktop-only { display: none !important; }
+.mobile-only { display: flex; } 
 
 /* ========== SCREEN 1 ========== */
 .screen1-container {
@@ -138,18 +142,23 @@ html, body {
 }
 #videoTitle { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 6px; }
 
-.soft-keys { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid #333; }
+/* Thickened up the F-Keys so they are much easier to hit */
+.soft-keys { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid #333; background: #111; }
 .soft-key {
-    background: transparent; border: none; border-right: 1px solid #333;
-    color: var(--text-dim); font-family: var(--font-mono);
-    font-size: 7px; letter-spacing: 0.8px; padding: 5px 2px;
-    cursor: pointer; line-height: 1.2;
+    background: linear-gradient(180deg, #222, #111); border: none; border-right: 1px solid #333;
+    color: var(--text-dim); font-family: var(--font-mono); font-weight: bold;
+    font-size: 8px; letter-spacing: 0.8px; padding: 10px 2px; 
+    cursor: pointer; line-height: 1.3; transition: all 0.1s;
 }
 .soft-key:last-child { border-right: none; }
-.soft-key:active { background: rgba(255,255,255,0.05); color: #fff; }
+.soft-key:active { background: #333; color: #fff; }
 .soft-key.flash { color: var(--pad-active); }
 
-.fkey-row { display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; padding: 6px 9px; flex-shrink: 0; }
+/* Speed Buttons */
+.speed-row { display: flex; justify-content: space-around; padding: 15px 16px 5px; flex-shrink: 0; }
+.speed-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.speed-label { font-size: 10px; font-weight: 700; color: var(--text-white); letter-spacing: 0.5px; }
+
 .hw-btn-small {
     width: 50px; height: 14px;
     background: linear-gradient(180deg, #d4d0c8 0%, #b8b4ac 40%, #a8a49c 100%);
@@ -160,11 +169,14 @@ html, body {
 .hw-btn-cap { width: 75%; height: 4px; background: linear-gradient(180deg, #3a3832, #1a1a18); border-radius: 1px; }
 .hw-btn-small:active { transform: translateY(1px); box-shadow: 0 1px 0 #706c64; }
 
+/* Pads Grid */
 .pad-grid {
     display: grid; grid-template-columns: repeat(3, 1fr);
     gap: 5px; padding: 3px 6px; flex: 1; min-height: 0;
 }
-.pad-cell { display: flex; flex-direction: column; min-height: 0; }
+.pad-cell { flex-direction: column; min-height: 0; } 
+.pad-cell.desktop-only { display: none; } /* Hides top row pads on mobile */
+
 .pad-label { font-size: 8px; font-weight: 700; letter-spacing: 1px; color: var(--text-white); margin-bottom: 1px; }
 .pad {
     flex: 1; width: 100%; border: none; border-radius: 4px;
@@ -185,18 +197,14 @@ html, body {
 }
 .pad.active .pad-time { color: rgba(0,0,0,0.7); }
 
-.speed-row { display: flex; justify-content: space-around; padding: 10px 16px 2px; flex-shrink: 0; }
-.speed-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.speed-label { font-size: 10px; font-weight: 700; color: var(--text-white); letter-spacing: 0.5px; }
-.speed-btn { background: linear-gradient(180deg, #d4d0c8 0%, #b8b4ac 40%, #a8a49c 100%); }
-.speed-btn.active-speed { background: linear-gradient(180deg, #e8c8a8 0%, #d4a878 40%, #c09060 100%); }
-.speed-btn.active-speed .hw-btn-cap { background: linear-gradient(180deg, #5a3020, #3a1a10); }
 
+/* Transport Grid */
 .transport-grid {
     display: grid; grid-template-columns: repeat(4, 1fr);
     gap: 6px 8px; padding: 4px 12px 2px; flex-shrink: 0;
 }
-.t-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.t-cell { flex-direction: column; align-items: center; gap: 2px; }
+.t-cell.mobile-only { display: flex; }
 .t-label { font-size: 7px; font-weight: 700; color: var(--text-white); letter-spacing: 0px; text-align: center; white-space: nowrap; }
 .t-btn {
     width: 100%; height: 30px; border: none; border-radius: 3px;
@@ -293,14 +301,17 @@ html, body {
 
 /* ========================================
    ★★★ THE MASSIVE DESKTOP HARDWARE GRID ★★★
-   Activates automatically on screens wider than 800px
    ======================================== */
 @media (min-width: 800px) {
+    /* Swap the display toggles so Desktop sees 12 pads and Recording controls */
+    .mobile-only { display: none !important; }
+    .desktop-only { display: flex !important; }
+    
     .screen1-container { padding-top: 10vh; max-width: 600px; }
     
     .screen2-container {
-        max-width: 1400px; /* <--- Massively increased width */
-        width: 95%;        /* <--- Consumes most of the screen */
+        max-width: 1400px; 
+        width: 95%;        
         padding-top: 6vh;
         display: grid;
         grid-template-columns: 1.15fr 1fr; 
@@ -322,19 +333,15 @@ html, body {
     .transport-grid { grid-area: transport; gap: 10px 12px; }
     .rec-status-bar { grid-area: recstat; }
 
-    /* The Massive Pad Scaling */
     .pad { 
-        min-height: unset; 
-        height: auto;      
-        aspect-ratio: 1 / 1; 
-        border-radius: 12px; /* Bigger corner radius for massive pads */
+        min-height: unset; height: auto; aspect-ratio: 1 / 1; 
+        border-radius: 12px;
         box-shadow: 0 6px 0 #8a8680, 0 8px 12px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.5);
     }
     .pad:active { transform: translateY(4px); box-shadow: 0 2px 0 #8a8680, 0 3px 6px rgba(0,0,0,0.2); }
     .pad.active { box-shadow: 0 6px 0 #1a6618, 0 8px 12px rgba(0,0,0,0.4), 0 0 16px rgba(68,204,68,0.4), inset 0 2px 0 rgba(255,255,255,0.3); }
     .pad.active:active { transform: translateY(4px); box-shadow: 0 2px 0 #1a6618; }
     
-    /* Scaled up typography & buttons */
     .pad-label { font-size: 14px; margin-bottom: 6px; letter-spacing: 2px; }
     .t-btn { height: 50px; border-radius: 5px; }
     .t-label { font-size: 11px; margin-bottom: 6px; letter-spacing: 1px; }
@@ -345,5 +352,5 @@ html, body {
     .header-text { font-size: 18px; letter-spacing: 3px; }
     .display-top-label { font-size: 12px; letter-spacing: 3px; padding-bottom: 4px; }
     .video-info { font-size: 12px; padding: 6px 12px; }
-    .soft-key { font-size: 11px; padding: 10px 6px; }
+    .soft-key { font-size: 13px; padding: 12px 6px; }
 }
