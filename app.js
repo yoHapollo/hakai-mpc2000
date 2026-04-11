@@ -581,5 +581,10 @@ async function convertToWav(webmBlob) {
 function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); }
 function formatTime(seconds) { return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}.${String(Math.floor((seconds % 1) * 100)).padStart(2, '0')}`; }
 let toastTimeout; function showToast(msg) { const toast = $('#toast'); toast.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800); }
+
+function doGenNewPlaylist() { switchToScreen1(); showToast('BACK TO CRATE DIGGING'); }
+
+function flashKey(sel) { const el = $(sel); if (!el) return; el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 400); }
+
 document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v4.4');
