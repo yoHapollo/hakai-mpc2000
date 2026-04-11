@@ -1,9 +1,10 @@
 /* ============================================
-   HAKAI MPC 2000 — APP.JS 
+   HAKAI MPC 2000 — APP.JS (V4.4 - Mobile Logic Fix)
    YouTube OAuth + Gapless Drum Loop Engine 
+   + Ghost Click Lock + Mobile Transport Mappings
    ============================================ */
 
-   const CONFIG = {
+const CONFIG = {
     API_KEY: 'AIzaSyDaHVAAXKFjOiXc7pw9exh92MJYXIQ4Kvg',
     CLIENT_ID: '564150027983-aero1s5g4ctnm5iihv3c1un23rc2mnk5.apps.googleusercontent.com',
     SCOPES: 'https://www.googleapis.com/auth/youtube',
@@ -289,7 +290,7 @@ async function addToPlaylist() {
     if (!accessToken) { showToast('SIGN IN TO ADD TO YT PLAYLIST'); return; }
     try {
         await ytApi('playlistItems?part=snippet', 'POST', { snippet: { playlistId: 'PLLVBqHeyUt0DYFxk20wKv495txAKAg9eu', resourceId: { kind: 'youtube#video', videoId: currentPlaylist[currentVideoIndex].videoId } } });
-        showToast('ADDED TO TARGET PLAYLIST');
+        flashKey('#btnF2'); showToast('ADDED TO TARGET PLAYLIST');
     } catch (e) { showToast('PLAYLIST ERROR'); }
 }
 
@@ -298,7 +299,7 @@ async function likeVideo() {
     if (!accessToken) { showToast('SIGN IN TO LIKE YT VIDEO'); return; }
     try {
         await ytApi(`videos/rate?id=${currentPlaylist[currentVideoIndex].videoId}&rating=like`, 'POST');
-        showToast('♥ LIKED ON YOUTUBE');
+        flashKey('#btnF4'); showToast('♥ LIKED ON YOUTUBE');
     } catch (e) { showToast('LIKE ERROR'); }
 }
 
@@ -346,9 +347,9 @@ function doSkip(secs) {
     showToast(secs > 0 ? '+3 SECONDS' : '-3 SECONDS');
 }
 
-$('#btnPlay')?.addEventListener('click', doPlay); $('#btnStop')?.addEventListener('click', doStop);
-$('#btnNext')?.addEventListener('click', doNext); $('#btnLast')?.addEventListener('click', doLast);
-$('#btnSkipBack')?.addEventListener('click', () => doSkip(-3)); $('#btnSkipFwd')?.addEventListener('click', () => doSkip(3));
+$('#btnPlay').addEventListener('click', doPlay); $('#btnStop').addEventListener('click', doStop);
+$('#btnNext').addEventListener('click', doNext); $('#btnLast').addEventListener('click', doLast);
+$('#btnSkipBack').addEventListener('click', () => doSkip(-3)); $('#btnSkipFwd').addEventListener('click', () => doSkip(3));
 
 function setSpeed(targetSpeed) {
     currentSpeed = currentSpeed === targetSpeed ? 1.0 : targetSpeed;
@@ -397,15 +398,17 @@ $$('.pad').forEach(padEl => {
 });
 
 // ==========================================
-// BUTTON BINDINGS
+// F-KEYS / NEW MOBILE BUTTONS MAPPING
 // ==========================================
 $('#btnF1')?.addEventListener('click', doGenNewPlaylist);
 $('#btnF2')?.addEventListener('click', addToPlaylist);
 $('#btnF3')?.addEventListener('click', doScreenshot);
 $('#btnF4')?.addEventListener('click', likeVideo);
 
+// Bind the new mobile transport buttons to the exact same functions
 $('#btnMobAdd')?.addEventListener('click', addToPlaylist);
 $('#btnMobShot')?.addEventListener('click', doScreenshot);
+
 
 // ==========================================
 // SCREENSHOT ENGINE 
@@ -456,14 +459,14 @@ async function doScreenshot() {
                 a.href = canvas.toDataURL('image/jpeg', 0.9);
                 a.download = `${rawTitle.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, "-") || "Crate-Dig-Sample"}.jpg`;
                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                showToast('SCREENSHOT SAVED');
+                flashKey('#btnF3'); showToast('SCREENSHOT SAVED');
             } catch (err) { showToast('CORS ERROR'); }
         }
     } catch(e) { showToast('ERROR CAPTURING'); }
 }
 
 // ==========================================
-// HOTKEYS & RECORDING
+// RECORDING & HOTKEYS
 // ==========================================
 const KEY_TO_PAD = { 'z': 0, 'x': 1, 'c': 2, 'a': 3, 's': 4, 'd': 5, 'q': 6, 'w': 7, 'e': 8, '1': 9, '2': 10, '3': 11 };
 const KEY_TO_SPEED = { 'm': 0.5, ',': 0.75, '.': 1.25, '/': 1.5 };
@@ -488,6 +491,9 @@ document.addEventListener('keydown', (e) => {
     if (key === 't') { e.preventDefault(); stopRecording(false); return; }
 });
 
+$('#btnRec')?.addEventListener('click', startRecording);
+$('#btnStopRec')?.addEventListener('click', () => stopRecording(false));
+
 async function startRecording() {
     if (isRecording) return;
     try {
@@ -504,7 +510,7 @@ async function startRecording() {
         mediaRecorder.onstop = () => { if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; } };
 
         mediaRecorder.start(100); isRecording = true; recStartTime = Date.now();
-        recStatus.textContent = '● REC 0:00'; recStatus.classList.add('active');
+        $('#btnRec').classList.add('recording'); recStatus.textContent = '● REC 0:00'; recStatus.classList.add('active');
 
         recTimerInterval = setInterval(() => {
             const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
@@ -517,7 +523,7 @@ async function startRecording() {
 function stopRecording(discard = false) {
     if (!isRecording || !mediaRecorder) return;
     isRecording = false; clearInterval(recTimerInterval);
-    recStatus.textContent = ''; recStatus.classList.remove('active');
+    $('#btnRec').classList.remove('recording'); recStatus.textContent = ''; recStatus.classList.remove('active');
 
     if (discard) { mediaRecorder.stop(); recordedChunks = []; showToast('RECORDING DISCARDED'); return; }
     mediaRecorder.stop();
@@ -575,8 +581,5 @@ async function convertToWav(webmBlob) {
 function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); }
 function formatTime(seconds) { return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}.${String(Math.floor((seconds % 1) * 100)).padStart(2, '0')}`; }
 let toastTimeout; function showToast(msg) { const toast = $('#toast'); toast.textContent = msg; toast.classList.add('show'); clearTimeout(toastTimeout); toastTimeout = setTimeout(() => toast.classList.remove('show'), 1800); }
-
-function doGenNewPlaylist() { switchToScreen1(); showToast('BACK TO CRATE DIGGING'); }
-
 document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-console.log('[HAKAI] Layout Matched to Specs');
+console.log('[HAKAI] MPC 2000 Crate Digging Center — Loaded v4.4');

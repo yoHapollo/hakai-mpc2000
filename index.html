@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="HAKAI MPC">
@@ -108,93 +108,93 @@
 
     <div id="screen2" class="screen">
         <div class="screen2-container">
-            <div class="header-bar desktop-only">
-                <span class="header-text">
-                    <span class="hakai-brand"><span style="color: #D32F2F;">HAKAI</span> </span>MPC 2000 CRATE DIGGING CENTER
-                </span>
+            <div class="header-bar">
+                <span class="header-text">MPC 2000 CRATE DIGGING CENTER</span>
                 <img class="header-avatar" id="headerAvatar" src="" alt="" style="display:none;">
             </div>
 
-            <div class="layout-wrapper">
-                
-                <div class="left-panel">
-                    
-                    <div class="area-screen">
-                        <div class="bezel-outer">
-                            <div class="display-top-label">MUSIC PRODUCER CENTER</div>
-                            <div class="player-area">
-                                <div id="ytPlayer"></div>
-                                <div class="green-overlay"></div>
-                                <div class="video-info" id="videoInfo">
-                                    <span id="videoTitle">NO VIDEO LOADED</span>
-                                    <span id="videoIndex">0 / 0</span>
-                                </div>
-                            </div>
-                            <div class="soft-keys">
-                                <button class="soft-key" id="btnF1">GEN NEW<br>PLAYLIST</button>
-                                <button class="soft-key" id="btnF2">ADD TO<br>PLAYLIST</button>
-                                <button class="soft-key" id="btnF3">
-                                    <span class="desktop-text">SCREEN<br>SHOT</span>
-                                    <span class="mobile-text">WATCH<br>LATER</span>
-                                </button>
-                                <button class="soft-key" id="btnF4">
-                                    <span class="desktop-text">LIKE</span>
-                                    <span class="mobile-text">LIKE<br>VIDEO</span>
-                                </button>
-                            </div>
+            <div class="bezel bezel-sm">
+                <div class="display-unit">
+                    <div class="display-top-label">MUSIC PRODUCTION CENTER</div>
+                    <div class="player-area">
+                        <div id="ytPlayer"></div>
+                        <div class="green-overlay"></div>
+                        <div class="video-info" id="videoInfo">
+                            <span id="videoTitle">NO VIDEO LOADED</span>
+                            <span id="videoIndex">0 / 0</span>
                         </div>
                     </div>
-
-                    <div class="area-speed speed-row">
-                        <div class="speed-cell"><span class="speed-label">-.5</span><button class="speed-btn" data-speed="0.5"></button></div>
-                        <div class="speed-cell"><span class="speed-label">-.75</span><button class="speed-btn" data-speed="0.75"></button></div>
-                        <div class="speed-cell"><span class="speed-label">1.25</span><button class="speed-btn" data-speed="1.25"></button></div>
-                        <div class="speed-cell"><span class="speed-label">1.5</span><button class="speed-btn" data-speed="1.5"></button></div>
+                    <div class="soft-keys">
+                        <button class="soft-key" id="btnF1">GEN NEW<br>PLAYLIST</button>
+                        <button class="soft-key" id="btnF2">ADD TO<br>PLAYLIST</button>
+                        <button class="soft-key" id="btnF3">SCREEN<br>SHOT</button>
+                        <button class="soft-key" id="btnF4">LIKE</button>
                     </div>
-
-                    <div class="area-trans transport-grid">
-                        <div class="t-cell"><span class="t-label">LAST</span><button class="t-btn white-btn" id="btnLast"></button></div>
-                        <div class="t-cell"><span class="t-label">NEXT</span><button class="t-btn white-btn" id="btnNext"></button></div>
-                        <div class="t-cell"><span class="t-label">STOP</span><button class="t-btn white-btn" id="btnStop"></button></div>
-                        <div class="t-cell"><span class="t-label">PLAY</span><button class="t-btn white-btn" id="btnPlay"></button></div>
-
-                        <div class="t-cell"><span class="t-label">ADD LIST</span><button class="t-btn red-btn" id="btnMobAdd"></button></div>
-                        <div class="t-cell"><span class="t-label">IMAGE</span><button class="t-btn red-btn" id="btnMobShot"></button></div>
-                        <div class="t-cell"><span class="t-label">&lt; 3 SEC</span><button class="t-btn dark-btn" id="btnSkipBack"></button></div>
-                        <div class="t-cell"><span class="t-label">3 SEC &gt;</span><button class="t-btn dark-btn" id="btnSkipFwd"></button></div>
-
-                        <div class="t-cell"><span class="t-label">BREAK - 97</span><button class="speed-btn break-btn black-pill" data-break="1"></button></div>
-                        <div class="t-cell"><span class="t-label">BREAK - 80</span><button class="speed-btn break-btn black-pill" data-break="2"></button></div>
-                        <div class="t-cell"><span class="t-label">BREAK - 70</span><button class="speed-btn break-btn black-pill" data-break="3"></button></div>
-                        <div class="t-cell"><span class="t-label">BREAK - 87</span><button class="speed-btn break-btn black-pill" data-break="4"></button></div>
-                    </div>
-
                 </div>
-
-                <div class="right-panel">
-                    
-                    <div class="area-pads pad-grid">
-                        <div class="pad-cell desktop-only"><span class="pad-label">PAD 10</span><button class="pad" data-pad="9"><span class="pad-time"></span></button></div>
-                        <div class="pad-cell desktop-only"><span class="pad-label">PAD 11</span><button class="pad" data-pad="10"><span class="pad-time"></span></button></div>
-                        <div class="pad-cell desktop-only"><span class="pad-label">PAD 12</span><button class="pad" data-pad="11"><span class="pad-time"></span></button></div>
-                        
-                        <div class="pad-cell"><span class="pad-label">PAD 7</span><button class="pad" data-pad="6"><span class="pad-time"></span></button></div>
-                        <div class="pad-cell"><span class="pad-label">PAD 8</span><button class="pad" data-pad="7"><span class="pad-time"></span></button></div>
-                        <div class="pad-cell"><span class="pad-label">PAD 9</span><button class="pad" data-pad="8"><span class="pad-time"></span></button></div>
-                        
-                        <div class="pad-cell"><span class="pad-label">PAD 4</span><button class="pad" data-pad="3"><span class="pad-time"></span></button></div>
-                        <div class="pad-cell"><span class="pad-label">PAD 5</span><button class="pad" data-pad="4"><span class="pad-time"></span></button></div>
-                        <div class="pad-cell"><span class="pad-label">PAD 6</span><button class="pad" data-pad="5"><span class="pad-time"></span></button></div>
-                        
-                        <div class="pad-cell"><span class="pad-label">PAD 1</span><button class="pad" data-pad="0"><span class="pad-time"></span></button></div>
-                        <div class="pad-cell"><span class="pad-label">PAD 2</span><button class="pad" data-pad="1"><span class="pad-time"></span></button></div>
-                        <div class="pad-cell"><span class="pad-label">PAD 3</span><button class="pad" data-pad="2"><span class="pad-time"></span></button></div>
-                    </div>
-
-                </div>
-
             </div>
 
+            <div class="pad-grid">
+                <div class="pad-cell desktop-only"><span class="pad-label">PAD 10</span><button class="pad" data-pad="9"><span class="pad-time"></span></button></div>
+                <div class="pad-cell desktop-only"><span class="pad-label">PAD 11</span><button class="pad" data-pad="10"><span class="pad-time"></span></button></div>
+                <div class="pad-cell desktop-only"><span class="pad-label">PAD 12</span><button class="pad" data-pad="11"><span class="pad-time"></span></button></div>
+                
+                <div class="pad-cell"><span class="pad-label">PAD 7</span><button class="pad" data-pad="6"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 8</span><button class="pad" data-pad="7"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 9</span><button class="pad" data-pad="8"><span class="pad-time"></span></button></div>
+                
+                <div class="pad-cell"><span class="pad-label">PAD 4</span><button class="pad" data-pad="3"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 5</span><button class="pad" data-pad="4"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 6</span><button class="pad" data-pad="5"><span class="pad-time"></span></button></div>
+                
+                <div class="pad-cell"><span class="pad-label">PAD 1</span><button class="pad" data-pad="0"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 2</span><button class="pad" data-pad="1"><span class="pad-time"></span></button></div>
+                <div class="pad-cell"><span class="pad-label">PAD 3</span><button class="pad" data-pad="2"><span class="pad-time"></span></button></div>
+            </div>
+
+            <div class="speed-row">
+                <div class="speed-cell"><span class="speed-label">-.5</span><button class="hw-btn-small speed-btn" data-speed="0.5"><div class="hw-btn-cap"></div></button></div>
+                <div class="speed-cell"><span class="speed-label">-.75</span><button class="hw-btn-small speed-btn" data-speed="0.75"><div class="hw-btn-cap"></div></button></div>
+                <div class="speed-cell"><span class="speed-label">1.25</span><button class="hw-btn-small speed-btn" data-speed="1.25"><div class="hw-btn-cap"></div></button></div>
+                <div class="speed-cell"><span class="speed-label">1.5</span><button class="hw-btn-small speed-btn" data-speed="1.5"><div class="hw-btn-cap"></div></button></div>
+            </div>
+
+            <div class="transport-grid">
+                
+                <div class="t-cell mobile-only">
+                    <span class="t-label">ADD TO LIST</span>
+                    <button class="t-btn silver" id="btnMobAdd"></button>
+                </div>
+                <div class="t-cell mobile-only">
+                    <span class="t-label">SCREEN SHOT</span>
+                    <button class="t-btn silver" id="btnMobShot"></button>
+                </div>
+
+                <div class="t-cell desktop-only">
+                    <span class="t-label">REC</span>
+                    <button class="t-btn red" id="btnRec"><div class="rec-dot"></div></button>
+                </div>
+                <div class="t-cell desktop-only">
+                    <span class="t-label">STOP REC</span>
+                    <button class="t-btn white" id="btnStopRec"><div class="rec-square"></div></button>
+                </div>
+
+                <div class="t-cell"><span class="t-label">-3 SEC</span><button class="t-btn silver" id="btnSkipBack"></button></div>
+                <div class="t-cell"><span class="t-label">+3 SEC</span><button class="t-btn silver" id="btnSkipFwd"></button></div>
+
+                <div class="t-cell"><span class="t-label">LAST</span><button class="t-btn red" id="btnLast"></button></div>
+                <div class="t-cell"><span class="t-label">NEXT</span><button class="t-btn red" id="btnNext"></button></div>
+                <div class="t-cell"><span class="t-label">STOP</span><button class="t-btn silver" id="btnStop"></button></div>
+                <div class="t-cell"><span class="t-label">PLAY</span><button class="t-btn silver" id="btnPlay"></button></div>
+
+                <div class="t-cell"><span class="t-label">BREAK 1 - 97BPM</span><button class="t-btn silver break-btn" data-break="1"></button></div>
+                <div class="t-cell"><span class="t-label">BREAK 2 - 80BPM</span><button class="t-btn silver break-btn" data-break="2"></button></div>
+                <div class="t-cell"><span class="t-label">BREAK 3 - 70BPM</span><button class="t-btn silver break-btn" data-break="3"></button></div>
+                <div class="t-cell"><span class="t-label">BREAK 4 - 87BPM</span><button class="t-btn silver break-btn" data-break="4"></button></div>
+            </div>
+
+            <div class="rec-status-bar desktop-only">
+                <div class="rec-status" id="recStatus"></div>
+            </div>
         </div>
     </div>
 
@@ -203,7 +203,7 @@
             <div class="modal-title">SAVE SAMPLE</div>
             <div class="modal-lcd">
                 <label for="sampleName">FILE NAME</label>
-                <input type="text" id="sampleName" placeholder="my-chop-01" value="">
+                <input text="text" id="sampleName" placeholder="my-chop-01" value="">
                 <div class="modal-info" id="modalInfo"></div>
             </div>
             <div class="modal-buttons">
