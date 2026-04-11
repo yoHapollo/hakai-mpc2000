@@ -226,18 +226,30 @@ createBtn.addEventListener('click', async () => {
     
     let results = [];
     let attempts = 0;
+    let lastError = null;
+    
     while (attempts < 4 && results.length === 0) {
         try {
+            console.log(`Search attempt ${attempts + 1}/4`);
             results = await searchYouTubeRandomized(keywords, yearStartSel.value, yearEndSel.value, $('#maxViews').value, $('#language').value, parseInt($('#playlistLength').value));
-        } catch (err) {}
+            console.log(`Attempt ${attempts + 1} returned ${results.length} results`);
+        } catch (err) {
+            console.error(`Attempt ${attempts + 1} failed:`, err);
+            lastError = err;
+        }
         attempts++;
+        if (results.length === 0 && attempts < 4) {
+            await new Promise(resolve => setTimeout(resolve, 500)); // Brief delay between attempts
+        }
     }
 
     if (!results || results.length === 0) {
+        console.error('All attempts failed. Last error:', lastError);
         showToast('NO RESULTS — TRY DIFFERENT KEYWORDS');
         createBtn.style.display = ''; loadingIndicator.classList.remove('show'); return;
     }
 
+    console.log('Success! Found', results.length, 'videos');
     currentPlaylist = results; currentVideoIndex = 0; switchToScreen2();
 });
 
@@ -250,9 +262,20 @@ async function searchYouTubeRandomized(keywords, yearStart, yearEnd, maxViews, l
     if (language) params.set('relevanceLanguage', language);
 
     const resp = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
-    if (!resp.ok) throw new Error(`YT API ${resp.status}`);
+    if (!resp.ok) {
+        console.error('YouTube API error:', resp.status, await resp.text());
+        throw new Error(`YT API ${resp.status}`);
+    }
     
-    let videos = (await resp.json()).items.filter(i => i.id && i.id.videoId).map(i => ({ videoId: i.id.videoId, title: i.snippet.title }));
+    const data = await resp.json();
+    console.log('YouTube API response:', data);
+    
+    if (!data.items || data.items.length === 0) {
+        console.log('No items in response');
+        return [];
+    }
+    
+    let videos = data.items.filter(i => i.id && i.id.videoId).map(i => ({ videoId: i.id.videoId, title: i.snippet.title }));
     
     const seen = new Set();
     videos = videos.filter(v => { if (seen.has(v.videoId)) return false; seen.add(v.videoId); return true; });
@@ -263,12 +286,60 @@ async function searchYouTubeRandomized(keywords, yearStart, yearEnd, maxViews, l
         if (statsResp.ok) {
             const statsData = await statsResp.json();
             const viewMap = {}; const durationMap = {};
-            (statsData.items || []).forEach(item => { viewMap[item.id] = parseInt(item.statistics.viewCount) || 0; durationMap[item.id] = parseISO8601Duration(item.contentDetails.duration); });
+            (statsData.items || []).forEach(item => { 
+                viewMap[item.id] = parseInt(item.statistics.viewCount) || 0; 
+                durationMap[item.id] = parseISO8601Duration(item.contentDetails.duration); 
+            });
+            
             const maxViewCount = maxViews !== 'any' ? parseInt(maxViews) : Infinity;
-            videos = videos.filter(v => viewMap[v.videoId] <= maxViewCount && durationMap[v.videoId] >= 75 && durationMap[v.videoId] <= 900);
-            videos = videos.map(v => ({ ...v, title: v.title + ` [${formatViewCount(viewMap[v.videoId])} views]` }));
+            
+            // First, try with strict filters
+            let filteredVideos = videos.filter(v => {
+                const hasViews = viewMap[v.videoId] !== undefined;
+                const hasDuration = durationMap[v.videoId] !== undefined;
+                if (!hasViews || !hasDuration) return false;
+                const viewsOk = viewMap[v.videoId] <= maxViewCount;
+                const durationOk = durationMap[v.videoId] >= 75 && durationMap[v.videoId] <= 900;
+                return viewsOk && durationOk;
+            });
+            
+            // If strict filters return nothing, relax duration requirement
+            if (filteredVideos.length === 0) {
+                console.log('No results with strict filters, relaxing duration requirement...');
+                filteredVideos = videos.filter(v => {
+                    const hasViews = viewMap[v.videoId] !== undefined;
+                    const hasDuration = durationMap[v.videoId] !== undefined;
+                    if (!hasViews || !hasDuration) return false;
+                    const viewsOk = viewMap[v.videoId] <= maxViewCount;
+                    const durationOk = durationMap[v.videoId] >= 30; // Relaxed from 75 seconds
+                    return viewsOk && durationOk;
+                });
+            }
+            
+            // If still nothing, just use view filter
+            if (filteredVideos.length === 0 && maxViewCount !== Infinity) {
+                console.log('Still no results, using view filter only...');
+                filteredVideos = videos.filter(v => {
+                    const hasViews = viewMap[v.videoId] !== undefined;
+                    if (!hasViews) return false;
+                    return viewMap[v.videoId] <= maxViewCount;
+                });
+            }
+            
+            // If STILL nothing, just return unfiltered with stats
+            if (filteredVideos.length === 0) {
+                console.log('No filters working, returning unfiltered results');
+                filteredVideos = videos.filter(v => viewMap[v.videoId] !== undefined);
+            }
+            
+            videos = filteredVideos.map(v => ({ 
+                ...v, 
+                title: v.title + ` [${formatViewCount(viewMap[v.videoId])} views]` 
+            }));
         }
     }
+    
+    console.log('Filtered videos:', videos.length);
     return shuffleArray(videos).slice(0, maxResults);
 }
 
