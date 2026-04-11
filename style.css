@@ -1,5 +1,5 @@
 /* ============================================
-   HAKAI MPC 2000 — STYLE.CSS (V4.1 - Desktop Pads Fix)
+   HAKAI MPC 2000 — STYLE.CSS (V4.2 - Massive Desktop Sizing)
    Mobile stacked / Desktop horizontal grid
    ============================================ */
 
@@ -292,15 +292,16 @@ html, body {
 .modal-save:active { transform: translateY(1px); }
 
 /* ========================================
-   ★★★ THE DESKTOP HARDWARE GRID ★★★
+   ★★★ THE MASSIVE DESKTOP HARDWARE GRID ★★★
    Activates automatically on screens wider than 800px
    ======================================== */
 @media (min-width: 800px) {
-    .screen1-container { padding-top: 80px; }
+    .screen1-container { padding-top: 10vh; max-width: 600px; }
     
     .screen2-container {
-        max-width: 950px; 
-        padding-top: 40px;
+        max-width: 1400px; /* <--- Massively increased width */
+        width: 95%;        /* <--- Consumes most of the screen */
+        padding-top: 6vh;
         display: grid;
         grid-template-columns: 1.15fr 1fr; 
         grid-template-areas:
@@ -309,37 +310,40 @@ html, body {
             "speed     pads"
             "transport pads"
             "recstat   pads";
-        gap: 15px 40px;
+        gap: 20px 60px;
         align-content: start;
         height: auto;
     }
 
-    .header-bar     { grid-area: header; margin-bottom: 20px; }
+    .header-bar     { grid-area: header; margin-bottom: 2vh; }
     .bezel          { grid-area: screen; margin-top: 0; align-self: start; }
-    .pad-grid       { grid-area: pads; gap: 12px; } /* Thicker spacing */
-    .speed-row      { grid-area: speed; padding-top: 10px; }
-    .transport-grid { grid-area: transport; }
+    .pad-grid       { grid-area: pads; gap: 16px; } 
+    .speed-row      { grid-area: speed; padding-top: 15px; }
+    .transport-grid { grid-area: transport; gap: 10px 12px; }
     .rec-status-bar { grid-area: recstat; }
 
-    /* The "Unsquish" Perfect Square Pad Fix */
+    /* The Massive Pad Scaling */
     .pad { 
-        min-height: unset; /* Remove the mobile vertical stretch */
-        height: auto;      /* Let width dictate the size */
-        aspect-ratio: 1 / 1; /* FORCE PERFECT SQUARE */
-        border-radius: 8px;  /* Softer, more hardware-like edges */
-        box-shadow: 0 4px 0 #8a8680, 0 6px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
+        min-height: unset; 
+        height: auto;      
+        aspect-ratio: 1 / 1; 
+        border-radius: 12px; /* Bigger corner radius for massive pads */
+        box-shadow: 0 6px 0 #8a8680, 0 8px 12px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.5);
     }
-    .pad:active { transform: translateY(3px); box-shadow: 0 1px 0 #8a8680, 0 2px 4px rgba(0,0,0,0.2); }
-    .pad.active { box-shadow: 0 4px 0 #1a6618, 0 6px 8px rgba(0,0,0,0.4), 0 0 12px rgba(68,204,68,0.4), inset 0 1px 0 rgba(255,255,255,0.3); }
-    .pad.active:active { transform: translateY(3px); box-shadow: 0 1px 0 #1a6618; }
+    .pad:active { transform: translateY(4px); box-shadow: 0 2px 0 #8a8680, 0 3px 6px rgba(0,0,0,0.2); }
+    .pad.active { box-shadow: 0 6px 0 #1a6618, 0 8px 12px rgba(0,0,0,0.4), 0 0 16px rgba(68,204,68,0.4), inset 0 2px 0 rgba(255,255,255,0.3); }
+    .pad.active:active { transform: translateY(4px); box-shadow: 0 2px 0 #1a6618; }
     
-    .pad-label { font-size: 11px; margin-bottom: 4px; }
-    .t-btn { height: 42px; }
-    .t-label { font-size: 9px; margin-bottom: 4px; }
-    .speed-label { font-size: 12px; margin-bottom: 4px; }
+    /* Scaled up typography & buttons */
+    .pad-label { font-size: 14px; margin-bottom: 6px; letter-spacing: 2px; }
+    .t-btn { height: 50px; border-radius: 5px; }
+    .t-label { font-size: 11px; margin-bottom: 6px; letter-spacing: 1px; }
+    .speed-label { font-size: 14px; margin-bottom: 6px; }
+    .hw-btn-small { height: 22px; width: 70px; }
+    .hw-btn-cap { height: 6px; border-radius: 2px; }
     
-    .header-text { font-size: 14px; }
-    .display-top-label { font-size: 10px; }
-    .video-info { font-size: 10px; padding: 4px 10px; }
-    .soft-key { font-size: 9px; padding: 8px 4px; }
+    .header-text { font-size: 18px; letter-spacing: 3px; }
+    .display-top-label { font-size: 12px; letter-spacing: 3px; padding-bottom: 4px; }
+    .video-info { font-size: 12px; padding: 6px 12px; }
+    .soft-key { font-size: 11px; padding: 10px 6px; }
 }
